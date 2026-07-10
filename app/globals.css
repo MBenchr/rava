@@ -128,6 +128,15 @@ img {
   background: #1d1612;
 }
 
+.button-primary:disabled,
+.button-secondary:disabled,
+.button-ghost:disabled,
+.accent-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
 .button-secondary {
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid var(--border-soft);
@@ -162,6 +171,11 @@ img {
 
 .field-shell:focus {
   border-color: rgba(95, 116, 106, 0.6);
+}
+
+.field-shell:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .field-label {
@@ -224,6 +238,236 @@ img {
   background: rgba(255, 255, 255, 0.95);
 }
 
+.projection-stage-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.8rem;
+  border: 1px solid rgba(33, 27, 23, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+}
+
+.projection-stage-frame--empty {
+  min-height: clamp(19rem, 42vw, 31rem);
+}
+
+.projection-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top left, rgba(241, 211, 122, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(244, 239, 230, 0.74));
+}
+
+.projection-stage-image {
+  display: block;
+  width: 100%;
+}
+
+.projection-stage-image--loading {
+  filter: blur(10px) saturate(0.86) brightness(1.02);
+  transform: scale(1.025);
+}
+
+.projection-loading-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(22, 18, 15, 0.18) 0%, rgba(22, 18, 15, 0.44) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(6px);
+}
+
+.projection-scanline {
+  position: absolute;
+  inset: -20% 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 22%,
+    rgba(241, 211, 122, 0.64) 50%,
+    rgba(255, 255, 255, 0.08) 78%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+  animation: projection-scan 2.6s linear infinite;
+}
+
+.projection-stage-copy {
+  position: absolute;
+  inset: auto 1rem 1rem 1rem;
+  border-radius: 1.35rem;
+  background: rgba(20, 16, 13, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 1rem 1rem 1.05rem;
+  backdrop-filter: blur(12px);
+}
+
+.projection-loading-bar {
+  position: relative;
+  height: 0.22rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.projection-loading-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -36%;
+  width: 36%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.94));
+  animation: projection-progress 1.15s ease-in-out infinite;
+}
+
+.projection-loading-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(33, 27, 23, 0.08);
+  background: rgba(255, 255, 255, 0.62);
+  padding: 0.75rem 0.95rem;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.projection-loading-step[data-active="true"] {
+  border-color: rgba(33, 27, 23, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-ink);
+}
+
+.projection-loading-step-index {
+  display: inline-flex;
+  min-width: 1.8rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(33, 27, 23, 0.08);
+  padding: 0.25rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.projection-compare-shell {
+  border-radius: 1.8rem;
+}
+
+.projection-compare-frame {
+  background: white;
+}
+
+.projection-compare-after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.84);
+}
+
+.projection-compare-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  pointer-events: none;
+}
+
+.projection-compare-divider::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(33, 27, 23, 0.08),
+    0 20px 40px rgba(33, 27, 23, 0.12);
+}
+
+.projection-compare-handle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(33, 27, 23, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-ink);
+  box-shadow: 0 14px 30px rgba(33, 27, 23, 0.14);
+  transform: translate(-50%, -50%);
+}
+
+.projection-badge {
+  position: absolute;
+  top: 1rem;
+  z-index: 2;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(33, 27, 23, 0.08);
+  padding: 0.45rem 0.8rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.projection-badge--left {
+  left: 1rem;
+}
+
+.projection-badge--right {
+  right: 1rem;
+}
+
+.projection-compare-range {
+  width: 100%;
+  appearance: none;
+  background: transparent;
+}
+
+.projection-compare-range::-webkit-slider-runnable-track {
+  height: 0.2rem;
+  border-radius: 999px;
+  background: rgba(33, 27, 23, 0.14);
+}
+
+.projection-compare-range::-moz-range-track {
+  height: 0.2rem;
+  border-radius: 999px;
+  background: rgba(33, 27, 23, 0.14);
+}
+
+.projection-compare-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(33, 27, 23, 0.14);
+  background: white;
+  box-shadow: 0 8px 18px rgba(33, 27, 23, 0.18);
+}
+
+.projection-compare-range::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(33, 27, 23, 0.14);
+  background: white;
+  box-shadow: 0 8px 18px rgba(33, 27, 23, 0.18);
+}
+
 .accent-dot {
   width: 0.95rem;
   height: 0.95rem;
@@ -245,10 +489,38 @@ img {
   background: rgba(33, 27, 23, 0.16);
 }
 
+@keyframes projection-scan {
+  0% {
+    transform: translateY(-120%);
+  }
+
+  100% {
+    transform: translateY(120%);
+  }
+}
+
+@keyframes projection-progress {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(380%);
+  }
+}
+
 @media (max-width: 900px) {
   .story-card {
     position: relative;
     top: auto;
     min-height: 28rem;
+  }
+
+  .projection-loading-step {
+    font-size: 0.8rem;
+  }
+
+  .projection-badge {
+    top: 0.8rem;
   }
 }

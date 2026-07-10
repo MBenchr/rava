@@ -38,6 +38,21 @@ type ProjectionApiResult = {
   resolvedFormat: Exclude<FormatId, "undecided">;
 };
 
+const projectionLoadingSteps = [
+  {
+    title: "Analyse de la photo",
+    detail: "Nous lisons le sol, les lignes de fuite et la profondeur de la pièce.",
+  },
+  {
+    title: "Calage du meuble",
+    detail: "Le Cabinet Mura est posé à l’échelle dans la zone choisie, sans déformer sa silhouette.",
+  },
+  {
+    title: "Lumière et matière",
+    detail: "Les ombres, la lumière et la texture mate sont harmonisées avec votre intérieur.",
+  },
+] as const;
+
 const galleryLayouts = [
   "md:col-span-7 md:row-span-2",
   "md:col-span-5 md:row-span-1",
@@ -77,6 +92,163 @@ function estimateErrorLabel(message?: string) {
   return message;
 }
 
+function ProjectionEmptyState() {
+  return (
+    <div className="space-y-4">
+      <div className="projection-stage-frame projection-stage-frame--empty projection-placeholder">
+        <div className="relative z-10 mx-auto max-w-sm text-center">
+          <p className="eyebrow">Aperçu</p>
+          <h3 className="mt-4 font-[var(--font-display)] text-4xl leading-none tracking-[-0.04em] text-[var(--color-ink)]">
+            La simulation apparaîtra ici.
+          </h3>
+          <p className="mt-4 text-sm leading-7 text-[var(--color-muted)]">
+            Ajoutez une photo nette, puis posez la pièce d’un clic dans l’image.
+          </p>
+        </div>
+      </div>
+      <p className="text-sm leading-7 text-[var(--color-muted)]">
+        Le cadre reste le même du placement jusqu’au résultat final, pour éviter les allers-retours
+        dans la page.
+      </p>
+    </div>
+  );
+}
+
+type ProjectionLoadingStageProps = {
+  imageUrl: string;
+  stepIndex: number;
+};
+
+function ProjectionLoadingStage({ imageUrl, stepIndex }: ProjectionLoadingStageProps) {
+  const activeStep = projectionLoadingSteps[stepIndex] ?? projectionLoadingSteps[0];
+
+  return (
+    <div className="space-y-4" role="status" aria-live="polite">
+      <div className="projection-stage-frame">
+        <img
+          src={imageUrl}
+          alt="Photo en cours d’analyse"
+          className="projection-stage-image projection-stage-image--loading"
+        />
+        <div className="projection-loading-scrim" />
+        <div className="projection-scanline" aria-hidden="true" />
+        <div className="projection-stage-copy">
+          <p className="eyebrow text-white/72">Simulation en cours</p>
+          <h3 className="mt-3 text-3xl font-[var(--font-display)] leading-none tracking-[-0.04em] text-white">
+            {activeStep.title}
+          </h3>
+          <p className="mt-3 max-w-md text-sm leading-7 text-white/80">{activeStep.detail}</p>
+          <div className="projection-loading-bar mt-5" aria-hidden="true" />
+        </div>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {projectionLoadingSteps.map((step, index) => (
+          <div
+            key={step.title}
+            className="projection-loading-step"
+            data-active={stepIndex === index}
+          >
+            <span className="projection-loading-step-index">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <span>{step.title}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-sm leading-7 text-[var(--color-muted)]">
+        Patientez pendant l’analyse. Inutile de recliquer : la simulation continue tant que cet
+        état reste affiché.
+      </p>
+    </div>
+  );
+}
+
+type ProjectionCompareStageProps = {
+  beforeUrl: string;
+  result: ProjectionApiResult;
+  compareValue: number;
+  onCompareChange: (value: number) => void;
+  onAdjustPlacement: () => void;
+  onRerun: () => void;
+};
+
+function ProjectionCompareStage({
+  beforeUrl,
+  result,
+  compareValue,
+  onCompareChange,
+  onAdjustPlacement,
+  onRerun,
+}: ProjectionCompareStageProps) {
+  return (
+    <div className="space-y-4">
+      <div className="projection-compare-shell">
+        <div className="projection-stage-frame projection-compare-frame">
+          <img src={beforeUrl} alt="Photo d’origine" className="projection-stage-image" />
+          <div className="projection-compare-after" style={{ width: `${compareValue}%` }}>
+            <img
+              src={result.projectionImage}
+              alt="Projection du Cabinet Mura dans votre intérieur"
+              className="projection-stage-image h-full object-cover"
+            />
+          </div>
+          <div className="projection-compare-divider" style={{ left: `${compareValue}%` }}>
+            <span className="projection-compare-handle" aria-hidden="true">
+              ↔
+            </span>
+          </div>
+          <span className="projection-badge projection-badge--left">Avant</span>
+          <span className="projection-badge projection-badge--right">Simulation</span>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-[auto_1fr_auto] md:items-center">
+          <label
+            htmlFor="projection-compare"
+            className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]"
+          >
+            Comparer
+          </label>
+          <input
+            id="projection-compare"
+            type="range"
+            min="0"
+            max="100"
+            value={compareValue}
+            className="projection-compare-range"
+            onChange={(event) => onCompareChange(Number(event.target.value))}
+          />
+          <span className="text-sm text-[var(--color-muted)]">Glissez pour révéler</span>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" className="button-primary font-semibold" onClick={onRerun}>
+          Refaire la simulation
+        </button>
+        <button type="button" className="button-secondary font-semibold" onClick={onAdjustPlacement}>
+          Replacer la pièce
+        </button>
+        <a
+          href={result.projectionImage}
+          download={`projection-rava-${result.requestId}.webp`}
+          className="button-secondary font-semibold"
+        >
+          Télécharger
+        </a>
+        <button
+          type="button"
+          className="button-secondary font-semibold"
+          onClick={() => scrollToAnchor("estimation")}
+        >
+          Utiliser pour la demande
+        </button>
+      </div>
+      <p className="text-sm leading-7 text-[var(--color-muted)]">
+        {result.warning ??
+          "La simulation reste indicative. Glissez le curseur pour comparer la photo d’origine et la proposition intégrée."}
+      </p>
+    </div>
+  );
+}
+
 export default function RavaExperience() {
   const [selectedFormat, setSelectedFormat] = useState<FormatId>("vertical");
   const [selectedUsage, setSelectedUsage] = useState<UsageId>("against-wall");
@@ -85,6 +257,8 @@ export default function RavaExperience() {
   const [projectionFile, setProjectionFile] = useState<File | null>(null);
   const [projectionPreviewUrl, setProjectionPreviewUrl] = useState("");
   const [placementBox, setPlacementBox] = useState<PlacementBox | null>(null);
+  const [projectionCompareValue, setProjectionCompareValue] = useState(56);
+  const [projectionLoadingStepIndex, setProjectionLoadingStepIndex] = useState(0);
   const [projectionState, setProjectionState] = useState<{
     loading: boolean;
     error: string | null;
@@ -122,6 +296,19 @@ export default function RavaExperience() {
     };
   }, [projectionPreviewUrl]);
 
+  useEffect(() => {
+    if (!projectionState.loading) {
+      setProjectionLoadingStepIndex(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setProjectionLoadingStepIndex((current) => (current + 1) % projectionLoadingSteps.length);
+    }, 1600);
+
+    return () => window.clearInterval(intervalId);
+  }, [projectionState.loading]);
+
   function chooseFormat(format: Exclude<FormatId, "undecided">) {
     setSelectedFormat(format);
     scrollToAnchor("projection");
@@ -137,6 +324,7 @@ export default function RavaExperience() {
     setProjectionFile(file);
     setProjectionPreviewUrl(file ? URL.createObjectURL(file) : "");
     setPlacementBox(null);
+    setProjectionCompareValue(56);
     setProjectionState({ loading: false, error: null, result: null });
   }
 
@@ -144,10 +332,7 @@ export default function RavaExperience() {
     setEstimatePhoto(event.target.files?.[0] ?? null);
   }
 
-  async function submitProjection(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setProjectionState({ loading: true, error: null, result: null });
-
+  async function requestProjection() {
     if (!projectionFile) {
       setProjectionState({
         loading: false,
@@ -165,6 +350,13 @@ export default function RavaExperience() {
       });
       return;
     }
+
+    scrollToAnchor("projection-stage");
+    setProjectionState((current) => ({
+      loading: true,
+      error: null,
+      result: current.result,
+    }));
 
     const payload: ProjectionRequestPayload = {
       format: selectedFormat,
@@ -201,18 +393,32 @@ export default function RavaExperience() {
         setSelectedFormat(data.resolvedFormat);
       }
 
+      setProjectionCompareValue(56);
       setProjectionState({ loading: false, error: null, result: data });
-      scrollToAnchor("projection-result");
     } catch (error) {
-      setProjectionState({
+      setProjectionState((current) => ({
         loading: false,
         error:
           error instanceof Error
             ? projectionErrorLabel(error.message)
             : "La projection n’a pas pu être préparée pour le moment.",
-        result: null,
-      });
+        result: current.result,
+      }));
     }
+  }
+
+  function submitProjection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void requestProjection();
+  }
+
+  function reopenPlacementEditor() {
+    setProjectionState({
+      loading: false,
+      error: null,
+      result: null,
+    });
+    scrollToAnchor("projection-stage");
   }
 
   async function submitEstimate(event: FormEvent<HTMLFormElement>) {
@@ -646,6 +852,36 @@ export default function RavaExperience() {
             </div>
             <form className="surface-panel rounded-[2rem] p-6 md:p-8" onSubmit={submitProjection}>
               <div className="grid gap-5">
+                <div id="projection-stage">
+                  {projectionPreviewUrl ? (
+                    projectionState.loading ? (
+                      <ProjectionLoadingStage
+                        imageUrl={projectionPreviewUrl}
+                        stepIndex={projectionLoadingStepIndex}
+                      />
+                    ) : projectionState.result ? (
+                      <ProjectionCompareStage
+                        beforeUrl={projectionPreviewUrl}
+                        result={projectionState.result}
+                        compareValue={projectionCompareValue}
+                        onCompareChange={setProjectionCompareValue}
+                        onAdjustPlacement={reopenPlacementEditor}
+                        onRerun={() => {
+                          void requestProjection();
+                        }}
+                      />
+                    ) : (
+                      <PlacementEditor
+                        imageUrl={projectionPreviewUrl}
+                        format={selectedFormat}
+                        placementBox={placementBox}
+                        onChange={setPlacementBox}
+                      />
+                    )
+                  ) : (
+                    <ProjectionEmptyState />
+                  )}
+                </div>
                 <div>
                   <label className="field-label" htmlFor="projection-photo">
                     Upload photo
@@ -656,8 +892,14 @@ export default function RavaExperience() {
                     type="file"
                     accept=".png,.jpg,.jpeg,.webp"
                     className="field-shell"
+                    disabled={projectionState.loading}
                     onChange={handleProjectionFileChange}
                   />
+                  <p className="mt-3 text-sm leading-7 text-[var(--color-muted)]">
+                    {projectionPreviewUrl
+                      ? "Une fois la photo chargée, cliquez dans l’image pour poser le meuble, puis lancez la simulation."
+                      : "Ajoutez une photo nette de l’espace. La projection se construira ici, sans ouvrir un second bloc plus bas."}
+                  </p>
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
@@ -668,6 +910,7 @@ export default function RavaExperience() {
                       id="projection-format"
                       className="field-shell"
                       value={selectedFormat}
+                      disabled={projectionState.loading}
                       onChange={(event) => setSelectedFormat(event.target.value as FormatId)}
                     >
                       {formatOptions.map((option) => (
@@ -685,6 +928,7 @@ export default function RavaExperience() {
                       id="projection-usage"
                       className="field-shell"
                       value={selectedUsage}
+                      disabled={projectionState.loading}
                       onChange={(event) => setSelectedUsage(event.target.value as UsageId)}
                     >
                       {usageOptions.map((option) => (
@@ -707,6 +951,7 @@ export default function RavaExperience() {
                           type="button"
                           className="accent-chip"
                           data-active={selectedAmbiance === option.id}
+                          disabled={projectionState.loading}
                           onClick={() => setSelectedAmbiance(option.id)}
                         >
                           <span className="accent-dot" style={{ backgroundColor: accent.hex }} />
@@ -725,26 +970,25 @@ export default function RavaExperience() {
                     className="field-shell min-h-32 resize-y"
                     placeholder="Une fenêtre, une hauteur, une contrainte, une envie."
                     value={projectionMessage}
+                    disabled={projectionState.loading}
                     onChange={(event) => setProjectionMessage(event.target.value)}
                   />
                 </div>
-                {projectionPreviewUrl ? (
-                  <PlacementEditor
-                    imageUrl={projectionPreviewUrl}
-                    format={selectedFormat}
-                    placementBox={placementBox}
-                    onChange={setPlacementBox}
-                  />
-                ) : null}
                 <button
                   type="submit"
                   className="button-primary font-semibold"
                   disabled={projectionState.loading}
                 >
-                  {projectionState.loading ? "Projection en cours..." : "Recevoir ma projection"}
+                  {projectionState.loading
+                    ? "Simulation en cours..."
+                    : projectionState.result
+                      ? "Relancer avec ces réglages"
+                      : "Lancer la simulation"}
                 </button>
                 <p className="text-sm leading-7 text-[var(--color-muted)]">
-                  Simulation indicative. Dimensions et livraison validées avant commande.
+                  {projectionState.loading
+                    ? "Le cadre ci-dessus reste actif pendant l’analyse. Ne fermez pas la page et ne relancez pas une seconde fois."
+                    : "Simulation indicative. Dimensions et livraison validées avant commande."}
                 </p>
                 {projectionState.error ? (
                   <p className="rounded-[1.4rem] bg-[rgba(231,181,166,0.24)] px-4 py-3 text-sm text-[var(--color-ink)]">
@@ -754,54 +998,6 @@ export default function RavaExperience() {
               </div>
             </form>
           </div>
-          {projectionState.result ? (
-            <div id="projection-result" className="surface-panel mt-10 rounded-[2rem] p-6 md:p-8">
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <p className="eyebrow">Projection</p>
-                  <h3 className="mt-3 font-[var(--font-display)] text-4xl leading-none tracking-[-0.04em]">
-                    Votre projection
-                  </h3>
-                </div>
-                <a
-                  href={projectionState.result.projectionImage}
-                  download={`projection-rava-${projectionState.result.requestId}.webp`}
-                  className="button-secondary font-semibold"
-                >
-                  Télécharger
-                </a>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <figure className="space-y-3">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-[1.7rem] bg-white">
-                    {projectionPreviewUrl ? (
-                      <img
-                        src={projectionPreviewUrl}
-                        alt="Photo d’origine"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : null}
-                  </div>
-                  <figcaption className="text-sm text-[var(--color-muted)]">Avant</figcaption>
-                </figure>
-                <figure className="space-y-3">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-[1.7rem] bg-white">
-                    <img
-                      src={projectionState.result.projectionImage}
-                      alt="Projection du Cabinet Mura dans un intérieur client"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <figcaption className="text-sm text-[var(--color-muted)]">Après</figcaption>
-                </figure>
-              </div>
-              {projectionState.result.warning ? (
-                <p className="mt-5 text-sm leading-7 text-[var(--color-muted)]">
-                  {projectionState.result.warning}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
         </div>
       </section>
 
