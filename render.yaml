@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: rava
+    runtime: node
+    plan: free
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start -- --hostname 0.0.0.0 --port $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://rava.mohyi.com
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false

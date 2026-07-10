@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="RAVA Editions presente Cabinet Mura, une piece sculpturale sur commande a configurer par format, finition et pays de livraison."
+    />
+    <title>RAVA Editions | Cabinet Mura</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preload" as="image" href="./assets/photos/hero-lumiere-calme.webp" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-format="vertical" data-finish="ivoire-chaud" data-country="BE">
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Retour en haut">
+        <span class="brand__name">RAVA</span>
+        <span class="brand__edition">Editions</span>
+      </a>
+
+      <button
+        class="header-menu"
+        id="headerMenu"
+        type="button"
+        aria-expanded="false"
+        aria-controls="siteNav"
+      >
+        Menu
+      </button>
+
+      <nav class="site-nav" id="siteNav" aria-label="Navigation principale">
+        <a class="site-nav__link" href="#choisir">Choisir</a>
+        <a class="site-nav__link" href="#espaces">Espaces</a>
+        <a class="site-nav__link" href="#fabrication">Fabrication</a>
+        <a class="site-nav__link" href="#commander">Commander</a>
+      </nav>
+
+      <button class="site-header__cta" type="button" data-open-order data-mode="order">
+        Commander
+      </button>
+    </header>
+
+    <main id="top">
+      <section class="hero shell">
+        <div class="hero__copy">
+          <p class="eyebrow">RAVA Editions</p>
+          <h1 class="display-title">Un fragment d'architecture, pense comme un meuble.</h1>
+          <p class="hero__lede">
+            Cabinet Mura se commande comme une piece editee : format, finition,
+            pays, puis lancement en atelier.
+          </p>
+
+          <div class="hero__meta" id="heroMeta">
+            <span>Piece 001 · format vertical</span>
+            <span>20 jours ouvres de fabrication</span>
+            <span>A partir de 2 000 EUR</span>
+          </div>
+
+          <div class="hero__actions">
+            <button class="button" type="button" data-open-order data-mode="order">
+              Commander la piece
+            </button>
+            <a class="button button--ghost" href="#choisir">Choisir la finition</a>
+          </div>
+        </div>
+
+        <figure
+          class="visual-frame visual-frame--hero visual-frame--wash"
+          id="heroFrame"
+          style="--media-position: 66% 50%; --wash-color: rgba(230, 217, 199, 0.16);"
+        >
+          <img
+            id="heroImage"
+            src="./assets/photos/hero-lumiere-calme.webp"
+            srcset="
+              ./assets/photos/hero-lumiere-calme-768.webp 768w,
+              ./assets/photos/hero-lumiere-calme.webp 1491w
+            "
+            sizes="(max-width: 960px) 100vw, 52vw"
+            width="1491"
+            height="1055"
+            alt="Cabinet Mura vertical dans un interieur calme et lumineux"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
+          <figcaption class="visual-frame__legend" id="heroLegend">
+            Piece 001 · format vertical
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="configure shell section-line" id="choisir">
+        <div class="section-head">
+          <p class="eyebrow">Choisir la piece</p>
+          <h2 class="section-title">Format, finition, pays.</h2>
+          <p class="section-copy">
+            Ici, tout se decide vite. L'image, le prix de depart, le delai et
+            la livraison suivent la variante choisie.
+          </p>
+        </div>
+
+        <div class="configure__grid">
+          <div class="configure__media" id="configureMedia">
+            <figure
+              class="visual-frame visual-frame--portrait visual-frame--wash"
+              style="--media-position: 51% 50%; --wash-color: rgba(230, 217, 199, 0.16);"
+            >
+              <img
+                src="./assets/photos/piece-vertical.webp"
+                srcset="
+                  ./assets/photos/piece-vertical-768.webp 768w,
+                  ./assets/photos/piece-vertical.webp 941w
+                "
+                sizes="(max-width: 960px) 100vw, 52vw"
+                width="941"
+                height="1672"
+                alt="Cabinet Mura vertical en lecture frontale"
+                loading="lazy"
+                decoding="async"
+              />
+              <figcaption class="visual-frame__legend">
+                Lecture frontale · format vertical
+              </figcaption>
+            </figure>
+          </div>
+
+          <div class="configure__panel">
+            <div class="control-block">
+              <div class="control-block__head">
+                <span>Format</span>
+                <strong id="formatCurrent">Vertical</strong>
+              </div>
+              <div class="segmented-grid" id="formatControls"></div>
+            </div>
+
+            <div class="control-block">
+              <div class="control-block__head">
+                <span>Finition</span>
+                <strong id="finishCurrent">Ivoire chaud</strong>
+              </div>
+              <div class="swatch-grid" id="finishControls"></div>
+            </div>
+
+            <div class="control-block">
+              <div class="control-block__head">
+                <span>Pays de livraison</span>
+                <strong id="countryCurrent">Belgique</strong>
+              </div>
+              <div class="country-grid" id="countryControls"></div>
+            </div>
+
+            <article class="summary-card" id="configureSummary">
+              <p class="summary-card__eyebrow">Configuration</p>
+              <h3>Cabinet Mura vertical</h3>
+              <dl class="summary-list">
+                <div>
+                  <dt>Dimensions</dt>
+                  <dd>102 x 184 x 42 cm</dd>
+                </div>
+                <div>
+                  <dt>Fabrication</dt>
+                  <dd>20 jours ouvres</dd>
+                </div>
+                <div>
+                  <dt>Livraison</dt>
+                  <dd>Belgique · 4 a 7 jours ouvres</dd>
+                </div>
+              </dl>
+              <p class="summary-card__price">A partir de 2 000 EUR</p>
+            </article>
+
+            <div class="action-row">
+              <button class="button" type="button" data-open-order data-mode="order">
+                Commander la piece
+              </button>
+              <button class="button button--ghost" type="button" data-open-order data-mode="sheet">
+                Recevoir la fiche technique
+              </button>
+              <button class="text-action" type="button" data-open-order data-mode="project">
+                Parler du projet
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="spaces shell section-line" id="espaces">
+        <div class="section-head section-head--narrow">
+          <p class="eyebrow">Voir la piece dans l'espace</p>
+          <h2 class="section-title">Une lecture directe, scene apres scene.</h2>
+          <p class="section-copy">
+            Pas de carousel gadget. Juste les images qui montrent la silhouette,
+            la matiere, l'usage et l'echelle.
+          </p>
+        </div>
+
+        <ol class="scene-stack" id="sceneStack"></ol>
+      </section>
+
+      <section class="process shell section-line" id="fabrication">
+        <div class="process__copy">
+          <p class="eyebrow">Fabrication & livraison</p>
+          <h2 class="section-title">20 jours ouvres. Puis un transport ajuste au pays.</h2>
+          <p class="section-copy">
+            La piece est lancee apres validation du format, de la finition, de
+            l'adresse et des acces. Rien n'est simule. Tout est clarifie avant
+            atelier.
+          </p>
+
+          <dl class="process-facts" id="processFacts"></dl>
+          <ol class="process-steps" id="processSteps"></ol>
+        </div>
+
+        <div class="process__visuals">
+          <div id="processPrimaryMedia"></div>
+          <div id="processSecondaryMedia"></div>
+        </div>
+      </section>
+
+      <section class="order shell section-line" id="commander">
+        <div class="order__media" id="orderMedia"></div>
+
+        <div class="order__panel">
+          <p class="eyebrow">Commander</p>
+          <h2 class="section-title">Commander la piece, puis valider le recapitulatif.</h2>
+          <p class="section-copy">
+            La commande standard reste simple. Le sur-mesure et les cas hors
+            flux normal passent en discussion, sans brouiller la vente.
+          </p>
+
+          <article class="order-summary" id="orderSummary"></article>
+
+          <div class="action-row action-row--stacked">
+            <button class="button" type="button" data-open-order data-mode="order">
+              Commander la piece
+            </button>
+            <button class="button button--ghost" type="button" data-open-order data-mode="sheet">
+              Recevoir la fiche technique
+            </button>
+            <button class="text-action" type="button" data-open-order data-mode="project">
+              Parler du projet
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer shell">
+      <span>RAVA Editions · Cabinet Mura</span>
+      <a href="mailto:bonjour@rava-editions.com">bonjour@rava-editions.com</a>
+      <a href="./conditions-commande.html">Conditions de commande</a>
+    </footer>
+
+    <aside class="drawer" id="orderDrawer" aria-hidden="true" hidden>
+      <div class="drawer__backdrop" data-close-drawer></div>
+      <div
+        class="drawer__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="drawerTitle"
+      >
+        <button class="drawer__close" type="button" data-close-drawer aria-label="Fermer">
+          Fermer
+        </button>
+
+        <p class="eyebrow" id="drawerKicker">Commander</p>
+        <h2 class="drawer__title" id="drawerTitle">Commander Cabinet Mura</h2>
+        <p class="drawer__intro" id="drawerIntro">
+          Recevez un recapitulatif clair de la piece, du delai et du transport
+          avant validation finale.
+        </p>
+
+        <article class="drawer__summary" id="drawerSummary"></article>
+
+        <form class="drawer__form" id="orderForm">
+          <input type="hidden" name="mode" id="drawerMode" value="order" />
+
+          <label class="field">
+            <span>Nom</span>
+            <input type="text" name="name" id="fieldName" placeholder="Votre nom" required />
+          </label>
+
+          <label class="field">
+            <span>Email</span>
+            <input
+              type="email"
+              name="email"
+              id="fieldEmail"
+              placeholder="vous@exemple.com"
+              required
+            />
+          </label>
+
+          <label class="field">
+            <span>Ville</span>
+            <input type="text" name="city" id="fieldCity" placeholder="Ville de livraison" />
+          </label>
+
+          <label class="field">
+            <span>Contexte</span>
+            <textarea
+              name="notes"
+              id="fieldNotes"
+              rows="4"
+              placeholder="Acces, etage, demande de fiche ou projet specifique."
+            ></textarea>
+          </label>
+
+          <button class="button button--full" type="submit" id="drawerSubmit">
+            Preparer l'email
+          </button>
+          <a class="text-action text-action--inline" id="drawerMailLink" href="#">
+            Ouvrir directement le message
+          </a>
+        </form>
+      </div>
+    </aside>
+
+    <div class="mobile-summary" id="mobileSummary">
+      <div class="mobile-summary__copy" id="mobileSummaryCopy">
+        Vertical · Ivoire chaud · A partir de 2 000 EUR
+      </div>
+      <button class="button button--compact" type="button" data-open-order data-mode="order">
+        Commander
+      </button>
+    </div>
+
+    <script type="application/ld+json" id="structuredData"></script>
+    <script src="./content.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
