@@ -3,6 +3,7 @@ services:
     name: rava
     runtime: node
     plan: free
+    repo: https://github.com/MBenchr/rava
     branch: main
     autoDeploy: true
     healthCheckPath: /
