@@ -20,6 +20,7 @@ import {
   type PixelRect,
   type PixelSize,
 } from "@/lib/projection-geometry";
+import { requestStructuredJson } from "@/lib/openai-structured-output";
 import { getServerEnv } from "@/lib/server-env";
 import { getApprovedProductReferenceKit } from "@/modules/projection/core/reference-kits";
 import type { PlacementTransform, ProjectionArtifact } from "@/modules/projection/core/types";
@@ -136,68 +137,73 @@ async function analyseSceneScale(
     getServerEnv("OPENAI_VISION_MODEL") ??
     getServerEnv("OPENAI_CHAT_MODEL") ??
     "gpt-5-mini";
-  const response = await client.responses.create({
-    model,
-    input: [
-      {
-        role: "user",
-        content: [
+  const evaluation = await requestStructuredJson<SceneScaleEvaluation>({
+    label: "Scene scale analysis",
+    initialMaxOutputTokens: 700,
+    retryMaxOutputTokens: 2400,
+    create: (maxOutputTokens) =>
+      client.responses.create({
+        model,
+        input: [
           {
-            type: "input_text",
-            text: `Analyse this interior photograph for physically credible furniture placement and photographic integration.
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: `Analyse this interior photograph for physically credible furniture placement and photographic integration.
 The customer selected floor anchor x=${floorAnchor.x.toFixed(4)}, y=${floorAnchor.y.toFixed(4)} in normalized full-image coordinates.
 The exact product is ${product.localized.en.name}, ${kit.dimensionsMm.width} mm wide × ${kit.dimensionsMm.height} mm high × ${kit.dimensionsMm.depth} mm deep.
 Infer the horizon, floor plane and scale from architecture, doors, windows, furniture and perspective. Return the normalized image height that this product should occupy when its base touches the selected anchor. Never move the selected floor anchor. Do not infer a different product aspect ratio.
 Also identify the camera view, the direction and quality of light, the interior style, and up to four restrained objects that could naturally sit in this product without obscuring its openings. Suggested objects must suit the room already photographed and look collected rather than staged.`,
-          },
-          {
-            type: "input_image",
-            image_url: dataUrl(original.buffer, "image/png"),
-            detail: "high",
+              },
+              {
+                type: "input_image",
+                image_url: dataUrl(original.buffer, "image/png"),
+                detail: "high",
+              },
+            ],
           },
         ],
-      },
-    ],
-    text: {
-      format: {
-        type: "json_schema",
-        name: "scene_scale",
-        strict: true,
-        schema: {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            confidence: { type: "number", minimum: 0, maximum: 1 },
-            suggestedHeight: { type: "number", minimum: 0.1, maximum: 0.9 },
-            horizonY: { type: "number", minimum: 0, maximum: 1 },
-            reason: { type: "string" },
-            cameraView: { type: "string" },
-            lightDirection: { type: "string" },
-            lightQuality: { type: "string" },
-            decorStyle: { type: "string" },
-            stylingObjects: {
-              type: "array",
-              maxItems: 4,
-              items: { type: "string" },
+        text: {
+          format: {
+            type: "json_schema",
+            name: "scene_scale",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                confidence: { type: "number", minimum: 0, maximum: 1 },
+                suggestedHeight: { type: "number", minimum: 0.1, maximum: 0.9 },
+                horizonY: { type: "number", minimum: 0, maximum: 1 },
+                reason: { type: "string" },
+                cameraView: { type: "string" },
+                lightDirection: { type: "string" },
+                lightQuality: { type: "string" },
+                decorStyle: { type: "string" },
+                stylingObjects: {
+                  type: "array",
+                  maxItems: 4,
+                  items: { type: "string" },
+                },
+              },
+              required: [
+                "confidence",
+                "suggestedHeight",
+                "horizonY",
+                "reason",
+                "cameraView",
+                "lightDirection",
+                "lightQuality",
+                "decorStyle",
+                "stylingObjects",
+              ],
             },
           },
-          required: [
-            "confidence",
-            "suggestedHeight",
-            "horizonY",
-            "reason",
-            "cameraView",
-            "lightDirection",
-            "lightQuality",
-            "decorStyle",
-            "stylingObjects",
-          ],
         },
-      },
-    },
-    max_output_tokens: 500,
+        max_output_tokens: maxOutputTokens,
+      }),
   });
-  const evaluation = JSON.parse(response.output_text) as SceneScaleEvaluation;
 
   if (
     !Number.isFinite(evaluation.confidence) ||
@@ -223,15 +229,20 @@ async function evaluateGeneratedProjection(
     getServerEnv("OPENAI_VISION_MODEL") ??
     getServerEnv("OPENAI_CHAT_MODEL") ??
     "gpt-5-mini";
-  const response = await client.responses.create({
-    model,
-    input: [
-      {
-        role: "user",
-        content: [
+  return requestStructuredJson<VisualProjectionEvaluation>({
+    label: "Projection quality evaluation",
+    initialMaxOutputTokens: 1200,
+    retryMaxOutputTokens: 3600,
+    create: (maxOutputTokens) =>
+      client.responses.create({
+        model,
+        input: [
           {
-            type: "input_text",
-            text: `You are a strict furniture projection quality inspector.
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: `You are a strict furniture projection quality inspector.
 IMAGE 1 is the generated full-room result.
 IMAGE 2 is the original room.
 IMAGE 3 is the immutable approved product photograph.
@@ -239,76 +250,87 @@ IMAGE 4 is the approved identity board showing front, right and rear geometry.
 
 The expected product has exactly ${kit.openings.length} openings and external dimensions ${kit.dimensionsMm.width} × ${kit.dimensionsMm.height} × ${kit.dimensionsMm.depth} mm. The requested normalized product box is x=${requestedBox.x.toFixed(4)}, y=${requestedBox.y.toFixed(4)}, width=${requestedBox.width.toFixed(4)}, height=${requestedBox.height.toFixed(4)}.
 
-Reject geometry drift, wrong opening count or layout, changed arch/base/depth, thinner rails, wrong width-to-height ratio, wrong finish, floating floor contact, visible collage edges, CGI material, incorrect lighting, or unnecessary changes to the room. Return a tight normalized bounding box around the generated product in IMAGE 1 and conservative 0–1 scores. Scores above 0.9 require strong visual evidence.`,
-          },
-          { type: "input_image", image_url: dataUrl(generated, "image/png"), detail: "high" },
-          { type: "input_image", image_url: dataUrl(original, "image/png"), detail: "high" },
-          {
-            type: "input_image",
-            image_url: dataUrl(officialProductReference, "image/webp"),
-            detail: "high",
-          },
-          {
-            type: "input_image",
-            image_url: dataUrl(identityBoard, "image/png"),
-            detail: "high",
+Reject geometry drift, wrong opening count or layout, changed arch/base/depth, thinner rails, wrong width-to-height ratio, wrong finish, floating floor contact, visible collage edges, CGI material, incorrect lighting, or unnecessary changes to the room. Return a tight normalized bounding box around the generated product in IMAGE 1 and conservative 0–1 scores. Scores above 0.9 require strong visual evidence. Return at most six short rejection reasons.`,
+              },
+              {
+                type: "input_image",
+                image_url: dataUrl(generated, "image/png"),
+                detail: "high",
+              },
+              {
+                type: "input_image",
+                image_url: dataUrl(original, "image/png"),
+                detail: "high",
+              },
+              {
+                type: "input_image",
+                image_url: dataUrl(officialProductReference, "image/webp"),
+                detail: "high",
+              },
+              {
+                type: "input_image",
+                image_url: dataUrl(identityBoard, "image/png"),
+                detail: "high",
+              },
+            ],
           },
         ],
-      },
-    ],
-    text: {
-      format: {
-        type: "json_schema",
-        name: "projection_quality",
-        strict: true,
-        schema: {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            productBox: {
+        text: {
+          format: {
+            type: "json_schema",
+            name: "projection_quality",
+            strict: true,
+            schema: {
               type: "object",
               additionalProperties: false,
               properties: {
-                x: { type: "number", minimum: 0, maximum: 1 },
-                y: { type: "number", minimum: 0, maximum: 1 },
-                width: { type: "number", minimum: 0.01, maximum: 1 },
-                height: { type: "number", minimum: 0.01, maximum: 1 },
+                productBox: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    x: { type: "number", minimum: 0, maximum: 1 },
+                    y: { type: "number", minimum: 0, maximum: 1 },
+                    width: { type: "number", minimum: 0.01, maximum: 1 },
+                    height: { type: "number", minimum: 0.01, maximum: 1 },
+                  },
+                  required: ["x", "y", "width", "height"],
+                },
+                geometrySimilarity: { type: "number", minimum: 0, maximum: 1 },
+                placementConfidence: { type: "number", minimum: 0, maximum: 1 },
+                realismScore: { type: "number", minimum: 0, maximum: 1 },
+                roomPreservationScore: { type: "number", minimum: 0, maximum: 1 },
+                openingCountMatches: { type: "boolean" },
+                openingLayoutMatches: { type: "boolean" },
+                silhouetteMatches: { type: "boolean" },
+                railThicknessMatches: { type: "boolean" },
+                frontAspectMatches: { type: "boolean" },
+                finishMatches: { type: "boolean" },
+                reasons: {
+                  type: "array",
+                  maxItems: 6,
+                  items: { type: "string" },
+                },
               },
-              required: ["x", "y", "width", "height"],
+              required: [
+                "productBox",
+                "geometrySimilarity",
+                "placementConfidence",
+                "realismScore",
+                "roomPreservationScore",
+                "openingCountMatches",
+                "openingLayoutMatches",
+                "silhouetteMatches",
+                "railThicknessMatches",
+                "frontAspectMatches",
+                "finishMatches",
+                "reasons",
+              ],
             },
-            geometrySimilarity: { type: "number", minimum: 0, maximum: 1 },
-            placementConfidence: { type: "number", minimum: 0, maximum: 1 },
-            realismScore: { type: "number", minimum: 0, maximum: 1 },
-            roomPreservationScore: { type: "number", minimum: 0, maximum: 1 },
-            openingCountMatches: { type: "boolean" },
-            openingLayoutMatches: { type: "boolean" },
-            silhouetteMatches: { type: "boolean" },
-            railThicknessMatches: { type: "boolean" },
-            frontAspectMatches: { type: "boolean" },
-            finishMatches: { type: "boolean" },
-            reasons: { type: "array", items: { type: "string" } },
           },
-          required: [
-            "productBox",
-            "geometrySimilarity",
-            "placementConfidence",
-            "realismScore",
-            "roomPreservationScore",
-            "openingCountMatches",
-            "openingLayoutMatches",
-            "silhouetteMatches",
-            "railThicknessMatches",
-            "frontAspectMatches",
-            "finishMatches",
-            "reasons",
-          ],
         },
-      },
-    },
-    max_output_tokens: 900,
+        max_output_tokens: maxOutputTokens,
+      }),
   });
-
-  return JSON.parse(response.output_text) as VisualProjectionEvaluation;
 }
 
 function validateInputImage(file: File) {
