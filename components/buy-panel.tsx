@@ -13,6 +13,7 @@ import { useMarket } from "@/components/market-provider";
 import { Button } from "@/components/ui/button";
 import { openStripeCheckout } from "@/lib/checkout-client";
 import { trackCommerceEvent } from "@/lib/commerce-events";
+import { preloadProductMedia } from "@/lib/image-preload";
 import {
   formatMarketAmount,
   formatMarketPriceFromEur,
@@ -172,6 +173,9 @@ export default function BuyPanel({
               )}`}
               aria-pressed={finish.id === activeFinishId}
               onClick={() => onFinishChange(finish.id)}
+              onFocus={() => void preloadProductMedia(productId, finish.id)}
+              onPointerEnter={() => void preloadProductMedia(productId, finish.id)}
+              onPointerDown={() => void preloadProductMedia(productId, finish.id)}
             >
               <span style={{ backgroundColor: finish.hex }} />
               <small>{finish.labels[locale]}</small>
@@ -306,6 +310,9 @@ export default function BuyPanel({
                   aria-pressed={finish.id === activeFinishId}
                   aria-label={finish.labels[locale]}
                   onClick={() => onFinishChange(finish.id)}
+                  onFocus={() => void preloadProductMedia(productId, finish.id)}
+                  onPointerEnter={() => void preloadProductMedia(productId, finish.id)}
+                  onPointerDown={() => void preloadProductMedia(productId, finish.id)}
                 >
                   <span style={{ backgroundColor: finish.hex }} />
                   {finish.labels[locale]}
@@ -331,10 +338,11 @@ export default function BuyPanel({
         >
           <span className="mobile-buy-bar__image">
             <Image
-              src={product.finishes[activeFinishId].packshot.src}
+              src={product.finishes[activeFinishId].packshot.thumbnailSrc}
               alt=""
               fill
               sizes="48px"
+              unoptimized
               className="object-cover"
             />
           </span>

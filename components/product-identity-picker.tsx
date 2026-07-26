@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 
+import { preloadProductMedia } from "@/lib/image-preload";
 import {
   getFinishMedia,
   getProductCopy,
@@ -44,13 +45,17 @@ export default function ProductIdentityPicker({
             aria-pressed={product.id === productId}
             aria-label={`${copy.name}, ${copy.descriptor}`}
             onClick={() => onChange(product.id)}
+            onFocus={() => void preloadProductMedia(product.id, activeFinish)}
+            onPointerEnter={() => void preloadProductMedia(product.id, activeFinish)}
+            onPointerDown={() => void preloadProductMedia(product.id, activeFinish)}
           >
             <span className="product-identity-picker__image">
               <Image
-                src={image.src}
+                src={image.thumbnailSrc}
                 alt=""
                 fill
                 sizes={compact ? "72px" : "120px"}
+                unoptimized
                 className="object-cover"
               />
             </span>

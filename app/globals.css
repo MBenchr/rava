@@ -325,10 +325,12 @@
 }
 
 .product-identity-picker button {
+  position: relative;
   display: grid;
   min-width: 0;
   grid-template-rows: 5rem auto;
   gap: 0.55rem;
+  overflow: hidden;
   padding: 0.35rem;
   border: 1px solid transparent;
   background: transparent;
@@ -355,6 +357,8 @@
   overflow: hidden;
   background: var(--secondary);
 }
+
+.product-identity-picker__image img { pointer-events: none; }
 
 .product-identity-picker__copy {
   display: grid;

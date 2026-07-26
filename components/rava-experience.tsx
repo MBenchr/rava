@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, MoveRight } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { startTransition, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import BuyPanel from "@/components/buy-panel";
 import { useCart } from "@/components/cart-provider";
@@ -14,6 +14,10 @@ import ProjectionStudio from "@/components/projection-studio";
 import ResponsiveProductImage from "@/components/responsive-product-image";
 import { SiteFooter, SiteHeader } from "@/components/site-shell";
 import { trackCommerceEvent } from "@/lib/commerce-events";
+import {
+  preloadProductMedia,
+  scheduleStorefrontPreload,
+} from "@/lib/image-preload";
 import {
   brandIdentity,
   finishIds,
@@ -48,7 +52,6 @@ export default function StorefrontExperience({
   initialFinishId,
 }: StorefrontExperienceProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { addItem, openCart } = useCart();
   const { marketCode } = useMarket();
   const [productId, setProductId] = useState(initialProductId);
@@ -80,12 +83,16 @@ export default function StorefrontExperience({
     });
   }, [finishId, marketCode, productId]);
 
+  useEffect(
+    () => scheduleStorefrontPreload(productId, finishId),
+    [finishId, productId],
+  );
+
   function syncUrl(nextProduct: ProductId, nextFinish: FinishId) {
-    startTransition(() =>
-      router.replace(`${pathname}?product=${nextProduct}&finish=${nextFinish}`, {
-        scroll: false,
-      }),
-    );
+    const params = new URLSearchParams(window.location.search);
+    params.set("product", nextProduct);
+    params.set("finish", nextFinish);
+    window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
   }
 
   function selectProduct(nextProduct: ProductId) {
@@ -140,7 +147,7 @@ export default function StorefrontExperience({
       <SiteHeader locale={locale} onProjectionOpen={openProjection} />
 
       <section className="campaign-hero">
-        <div className="campaign-hero__visual" key={heroMedia.src}>
+        <div className="campaign-hero__visual">
           <ResponsiveProductImage
             media={heroMedia}
             priority
@@ -216,6 +223,9 @@ export default function StorefrontExperience({
                     type="button"
                     className="editorial-product__visual"
                     onClick={() => selectProduct(item.id)}
+                    onFocus={() => void preloadProductMedia(item.id, itemFinish)}
+                    onPointerEnter={() => void preloadProductMedia(item.id, itemFinish)}
+                    onPointerDown={() => void preloadProductMedia(item.id, itemFinish)}
                     aria-label={`${locale === "fr" ? "Choisir" : "Choose"} ${itemCopy.name}`}
                   >
                     <ResponsiveProductImage
@@ -271,7 +281,7 @@ export default function StorefrontExperience({
 
         <div className="life-gallery">
           {storyFinishes.map((storyFinish, index) => (
-            <figure key={`${productId}-${storyFinish}`} className="life-gallery__frame">
+            <figure key={storyFinish} className="life-gallery__frame">
               <ResponsiveProductImage
                 media={getFinishMedia(productId, storyFinish).hero}
                 sizes={index === 0 ? "(max-width: 1023px) 100vw, 62vw" : "(max-width: 1023px) 100vw, 38vw"}

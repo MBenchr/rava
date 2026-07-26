@@ -81,10 +81,11 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
               {firstCartImage ? (
                 <span className="bag-button__thumb">
                   <Image
-                    src={firstCartImage.src}
+                    src={firstCartImage.thumbnailSrc}
                     alt=""
                     fill
                     sizes="28px"
+                    unoptimized
                     className="object-cover"
                   />
                 </span>

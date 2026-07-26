@@ -11,6 +11,72 @@ const roomImage = path.join(
   "viaire-seuil-chalk-lifestyle.webp",
 );
 
+test("variant changes keep the current hero visible while the next image decodes", async ({
+  page,
+}) => {
+  let releaseButterImage: () => void = () => {};
+  const butterImageGate = new Promise<void>((resolve) => {
+    releaseButterImage = resolve;
+  });
+
+  await page.route(
+    "**/viaire/elan-o1/scenes/viaire-seuil-butter-lifestyle-mobile.webp",
+    async (route) => {
+      await butterImageGate;
+      await route.continue();
+    },
+  );
+
+  await page.goto("/");
+
+  const heroPicture = page.locator(".campaign-hero__visual picture");
+  const heroImage = heroPicture.locator("img");
+  await expect(heroPicture).toHaveAttribute("data-image-src", /chalk-lifestyle/);
+  await expect
+    .poll(() => heroImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
+
+  await page.getByRole("button", { name: /Butter/ }).first().click();
+
+  await expect(heroPicture).toHaveAttribute("data-image-src", /chalk-lifestyle/, {
+    timeout: 1_000,
+  });
+  await expect
+    .poll(() => heroImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
+  releaseButterImage();
+  await expect(heroPicture).toHaveAttribute(
+    "data-image-src",
+    /butter-lifestyle/,
+    { timeout: 10_000 },
+  );
+
+  await page
+    .getByRole("button", { name: "PORTÉE, Open Low Cabinet", exact: true })
+    .click();
+  await expect(page).toHaveURL(/product=portee-o2&finish=butter/);
+  await expect(heroPicture).toHaveAttribute(
+    "data-image-src",
+    /viaire-portee-butter-lifestyle/,
+  );
+
+  await page
+    .getByRole("button", { name: "VEILLE, Bedside Table", exact: true })
+    .click();
+  await expect(page).toHaveURL(/product=veille-o4&finish=butter/);
+  await expect(heroPicture).toHaveAttribute(
+    "data-image-src",
+    /viaire-veille-butter-lifestyle/,
+  );
+
+  await page.getByRole("button", { name: /Sage/ }).first().click();
+  await expect(page).toHaveURL(/product=veille-o4&finish=sage/);
+  await expect(heroPicture).toHaveAttribute(
+    "data-image-src",
+    /viaire-veille-sage-lifestyle/,
+  );
+});
+
 test("storefront selection, cart and successful projection stay usable", async ({ page }) => {
   const jobId = "projection-e2e-completed";
   const placementBox = { x: 0.32, y: 0.2, width: 0.25, height: 0.5 };

@@ -81,7 +81,7 @@ export default function CartDrawer({ locale }: { locale: Locale }) {
                   );
                   return (
                     <article key={`${item.productId}:${item.finishId}`} className="cart-line">
-                      <div className="image-stage cart-line__hero"><Image src={image.src} alt={image.alt} fill sizes="160px" className="object-contain" /></div>
+                      <div className="image-stage cart-line__hero"><Image src={image.thumbnailSrc} alt={image.alt} fill sizes="160px" unoptimized className="object-contain" /></div>
                       <div className="grid content-start gap-3">
                         <div><p className="text-sm font-medium">{copy.name}</p><p className="mt-1 text-xs text-muted-foreground">{getFinishLabel(item.finishId, locale)}</p></div>
                         <p className="text-sm font-medium">{formatMarketAmount(linePrice, marketCode, locale)}</p>

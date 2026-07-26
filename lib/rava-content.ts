@@ -27,6 +27,7 @@ export type PlacementBox = {
 export type MediaAsset = {
   src: string;
   mobileSrc: string;
+  thumbnailSrc: string;
   alt: string;
 };
 
@@ -253,6 +254,7 @@ function media(pathname: string, alt: string, mobilePathname = `${pathname}-mobi
   return {
     src: `${pathname}.webp`,
     mobileSrc: `${mobilePathname}.webp`,
+    thumbnailSrc: `${pathname}-thumb.webp`,
     alt,
   };
 }

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { startTransition, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import BuyPanel from "@/components/buy-panel";
 import { useCart } from "@/components/cart-provider";
@@ -37,7 +37,6 @@ type ProductPageProps = {
 
 export default function ProductPage({ locale, productId, initialFinishId }: ProductPageProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { addItem, openCart } = useCart();
   const product = getProductById(productId);
   const copy = getProductCopy(productId, locale);
@@ -66,7 +65,9 @@ export default function ProductPage({ locale, productId, initialFinishId }: Prod
     setFinishId(normalized);
     setActiveMediaId(`${productId}-${normalized}-context`);
     setCartMessage(null);
-    startTransition(() => router.replace(`${pathname}?finish=${normalized}`, { scroll: false }));
+    const params = new URLSearchParams(window.location.search);
+    params.set("finish", normalized);
+    window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
   }
 
   function addSelection() {
@@ -97,7 +98,7 @@ export default function ProductPage({ locale, productId, initialFinishId }: Prod
 
       <section className="product-commerce">
         <div className="product-gallery">
-          <div className="product-gallery__stage" key={activeMedia.media.src}>
+          <div className="product-gallery__stage">
             <ResponsiveProductImage
               media={activeMedia.media}
               priority
@@ -115,7 +116,14 @@ export default function ProductPage({ locale, productId, initialFinishId }: Prod
                 onClick={() => setActiveMediaId(item.id)}
                 aria-label={item.label}
               >
-                <Image src={item.media.src} alt="" fill sizes="80px" className="object-cover" />
+                <Image
+                  src={item.media.thumbnailSrc}
+                  alt=""
+                  fill
+                  sizes="80px"
+                  unoptimized
+                  className="object-cover"
+                />
               </button>
             ))}
           </div>
@@ -155,10 +163,8 @@ export default function ProductPage({ locale, productId, initialFinishId }: Prod
             </figure>
             <aside>
               <figure>
-                <Image
-                  src={product.openBack.src}
-                  alt={product.openBack.alt}
-                  fill
+                <ResponsiveProductImage
+                  media={product.openBack}
                   sizes="(max-width: 1023px) 50vw, 32vw"
                   className="object-cover"
                 />
@@ -167,10 +173,8 @@ export default function ProductPage({ locale, productId, initialFinishId }: Prod
                 </figcaption>
               </figure>
               <figure>
-                <Image
-                  src={materialMedia.src}
-                  alt={materialMedia.alt}
-                  fill
+                <ResponsiveProductImage
+                  media={materialMedia}
                   sizes="(max-width: 1023px) 50vw, 32vw"
                   className="object-cover"
                 />

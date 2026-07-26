@@ -31,14 +31,20 @@ async function writeResponsiveScene(input, outputStem) {
   await sharp(input)
     .rotate()
     .resize({ width: 1800, fit: "inside", withoutEnlargement: true })
-    .webp({ quality: 91, effort: 6, smartSubsample: true })
+    .webp({ quality: 88, effort: 6, smartSubsample: true })
     .toFile(`${outputStem}.webp`);
 
   await sharp(input)
     .rotate()
     .resize({ width: 960, fit: "inside", withoutEnlargement: true })
-    .webp({ quality: 87, effort: 6, smartSubsample: true })
+    .webp({ quality: 84, effort: 6, smartSubsample: true })
     .toFile(`${outputStem}-mobile.webp`);
+
+  await sharp(input)
+    .rotate()
+    .resize({ width: 320, fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 80, effort: 6, smartSubsample: true })
+    .toFile(`${outputStem}-thumb.webp`);
 }
 
 async function writeMaterialDetail(input, outputStem) {
@@ -46,14 +52,20 @@ async function writeMaterialDetail(input, outputStem) {
   await sharp(input)
     .rotate()
     .resize({ width: 1200, height: 1200, fit: "cover", position: "attention" })
-    .webp({ quality: 91, effort: 6, smartSubsample: true })
+    .webp({ quality: 88, effort: 6, smartSubsample: true })
     .toFile(`${outputStem}.webp`);
 
   await sharp(input)
     .rotate()
     .resize({ width: 720, height: 720, fit: "cover", position: "attention" })
-    .webp({ quality: 87, effort: 6, smartSubsample: true })
+    .webp({ quality: 84, effort: 6, smartSubsample: true })
     .toFile(`${outputStem}-mobile.webp`);
+
+  await sharp(input)
+    .rotate()
+    .resize({ width: 320, height: 320, fit: "cover", position: "attention" })
+    .webp({ quality: 80, effort: 6, smartSubsample: true })
+    .toFile(`${outputStem}-thumb.webp`);
 }
 
 await rm(outputRoot, { recursive: true, force: true });
@@ -88,7 +100,7 @@ await writeFile(
   path.join(outputRoot, "manifest.json"),
   `${JSON.stringify(
     {
-      version: "2026.07.25-3",
+      version: "2026.07.26-1",
       brand: "VIAIRE",
       sourcePolicy:
         "Every published storefront image derives from a complete coherent photograph generated with the approved V2040 identity as reference. No product layer is pasted onto a room plate.",
