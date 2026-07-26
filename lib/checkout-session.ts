@@ -19,7 +19,25 @@ import { getServerEnv } from "@/lib/server-env";
 type CheckoutUiMode = "hosted" | "elements";
 
 function originFor(request: Request) {
-  return (getServerEnv("NEXT_PUBLIC_SITE_URL") ?? new URL(request.url).origin).replace(/\/$/, "");
+  const requestUrl = new URL(request.url);
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const forwardedProtocol =
+    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ??
+    requestUrl.protocol.replace(":", "");
+  const candidateHost = forwardedHost ?? requestUrl.host;
+  const isAllowedHost =
+    candidateHost === "rava.mohyi.com" ||
+    candidateHost === "rava-qt9q.onrender.com" ||
+    candidateHost === "localhost" ||
+    candidateHost.startsWith("localhost:") ||
+    candidateHost === "127.0.0.1" ||
+    candidateHost.startsWith("127.0.0.1:");
+
+  if (isAllowedHost) {
+    return `${forwardedProtocol}://${candidateHost}`;
+  }
+
+  return (getServerEnv("NEXT_PUBLIC_SITE_URL") ?? requestUrl.origin).replace(/\/$/, "");
 }
 
 function deliveryEstimate(marketCode: CheckoutPayload["marketCode"]) {
