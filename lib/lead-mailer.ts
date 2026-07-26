@@ -1,6 +1,13 @@
 import { Resend } from "resend";
 
-import { type EstimateRequestPayload, siteMeta } from "@/lib/rava-content";
+import {
+  getFinishById,
+  getFinishPrice,
+  getPlacementModeLabel,
+  getProductById,
+  siteMeta,
+  type EstimateRequestPayload,
+} from "@/lib/rava-content";
 
 type FileAttachment = {
   filename: string;
@@ -44,6 +51,10 @@ export async function sendLeadEmail(input: LeadMailerInput) {
     content: Buffer;
     content_type: string;
   }> = [];
+  const product = getProductById(input.payload.productId);
+  const finish = getFinishById(input.payload.finishId);
+  const displayedPrice = getFinishPrice(input.payload.productId, input.payload.finishId);
+  const placementLabel = getPlacementModeLabel(input.payload.placementMode);
 
   if (input.sourceImage) {
     attachments.push({
@@ -58,23 +69,24 @@ export async function sendLeadEmail(input: LeadMailerInput) {
 
     if (parsed) {
       attachments.push({
-        filename: "projection-rava.webp",
+        filename: "projection-traversee.webp",
         content: parsed.buffer,
         content_type: parsed.mime,
       });
     }
   }
 
-  const from = process.env.RESEND_FROM ?? "RAVA Éditions <onboarding@resend.dev>";
-  const subject = `Nouvelle demande RAVA — ${input.payload.name}`;
+  const from = process.env.RESEND_FROM ?? "VIAIRE <onboarding@resend.dev>";
+  const subject = `New VIAIRE project request — ${product.code} — ${input.payload.name}`;
   const html = `
-    <h1>Nouvelle demande RAVA</h1>
+    <h1>New VIAIRE project request</h1>
     <p><strong>Nom</strong> : ${input.payload.name}</p>
     <p><strong>Email</strong> : ${input.payload.email}</p>
     <p><strong>Ville / pays</strong> : ${input.payload.location}</p>
-    <p><strong>Format</strong> : ${input.payload.format}</p>
-    <p><strong>Usage</strong> : ${input.payload.usage}</p>
-    <p><strong>Ambiance</strong> : ${input.payload.ambiance}</p>
+    <p><strong>Produit</strong> : ${product.code} — ${product.title}</p>
+    <p><strong>Finition</strong> : ${finish.label}</p>
+    <p><strong>Prix affiché</strong> : ${displayedPrice}</p>
+    <p><strong>Placement</strong> : ${placementLabel}</p>
     <p><strong>Message</strong> : ${input.payload.message || "—"}</p>
     <p><strong>Délai indicatif affiché</strong> : ${siteMeta.fabricationDelay}</p>
     <p><strong>Prompt digest projection</strong> : ${input.projectionPromptDigest || "—"}</p>
@@ -91,9 +103,10 @@ export async function sendLeadEmail(input: LeadMailerInput) {
       `Nom : ${input.payload.name}`,
       `Email : ${input.payload.email}`,
       `Ville / pays : ${input.payload.location}`,
-      `Format : ${input.payload.format}`,
-      `Usage : ${input.payload.usage}`,
-      `Ambiance : ${input.payload.ambiance}`,
+      `Produit : ${product.code} — ${product.title}`,
+      `Finition : ${finish.label}`,
+      `Prix affiché : ${displayedPrice}`,
+      `Placement : ${placementLabel}`,
       `Message : ${input.payload.message || "—"}`,
       `Prompt digest projection : ${input.projectionPromptDigest || "—"}`,
       `Alerte projection : ${input.projectionWarning || "—"}`,

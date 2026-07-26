@@ -1,0 +1,3 @@
+import Link from "next/link";
+import { brandIdentity, siteMeta } from "@/lib/rava-content";
+export default function LegalPage() { return <main className="page-shell section-space"><Link href="/fr" className="text-sm underline">Retour</Link><p className="eyebrow mt-14">{brandIdentity.name}</p><h1 className="display-title mt-4 text-6xl">Mentions légales</h1><div className="mt-10 max-w-2xl border-t border-border pt-6 text-sm leading-7 text-muted-foreground"><p>Éditeur : {brandIdentity.name}</p><p>Contact : {siteMeta.leadEmail}</p><p className="mt-5">L’immatriculation, l’adresse du siège, la politique de retour et les informations fiscales doivent être complétées et validées juridiquement avant la mise en ligne publique.</p></div></main>; }

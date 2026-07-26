@@ -1,0 +1,3 @@
+import Link from "next/link";
+import { brandIdentity, siteMeta } from "@/lib/rava-content";
+export default function LegalPage() { return <main className="page-shell section-space"><Link href="/" className="text-sm underline">Back</Link><p className="eyebrow mt-14">{brandIdentity.name}</p><h1 className="display-title mt-4 text-6xl">Legal information</h1><div className="mt-10 max-w-2xl border-t border-border pt-6 text-sm leading-7 text-muted-foreground"><p>Publisher: {brandIdentity.name}</p><p>Contact: {siteMeta.leadEmail}</p><p className="mt-5">Company registration, registered address, returns policy and tax information must be completed and legally reviewed before public launch.</p></div></main>; }

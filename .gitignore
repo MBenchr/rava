@@ -2,6 +2,9 @@ node_modules
 .next
 out
 dist
+output
+test-results
+playwright-report
 .DS_Store
 .env
 .env.local

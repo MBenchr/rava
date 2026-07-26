@@ -1,277 +1,711 @@
+import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 import sharp from "sharp";
 
 import {
-  type AmbianceId,
-  type FormatId,
-  getVariantByFormat,
+  type FinishId,
+  getFinishById,
+  getProductById,
   type PlacementBox,
-  type UsageId,
+  type PlacementMode,
+  type ProductId,
 } from "@/lib/rava-content";
+import {
+  getContainRect,
+  mapPlacementBoxToContainedCanvas,
+  getNormalizedBoxAspect,
+  type PixelRect,
+  type PixelSize,
+} from "@/lib/projection-geometry";
+import { getServerEnv } from "@/lib/server-env";
+import { getApprovedProductReferenceKit } from "@/modules/projection/core/reference-kits";
+import type { PlacementTransform, ProjectionArtifact } from "@/modules/projection/core/types";
+import { evaluateProjectionQuality, ProjectionQualityError } from "@/modules/projection/quality/quality-gate";
 
 const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 const MAX_EDGE = 1600;
+const PROMPT_VERSION = "reference-guided-full-photo-v2";
 
-type GenerateProjectionInput = {
+export type ProjectionProgressStage = "analysing" | "rendering" | "integrating" | "verifying";
+
+export type GenerateProjectionInput = {
   file: File;
-  format: FormatId;
-  usage: UsageId;
-  ambiance: AmbianceId;
+  productId: ProductId;
+  finishId: FinishId;
+  placementMode: PlacementMode;
   message: string;
   placementBox: PlacementBox;
-};
-
-type ProjectionResult = {
-  projectionImage: string;
-  promptDigest: string;
-  requestId: string;
-  warning?: string;
-  resolvedFormat: Exclude<FormatId, "undecided">;
+  onProgress?: (stage: ProjectionProgressStage) => void;
 };
 
 type NormalizedImage = {
   buffer: Buffer;
   width: number;
   height: number;
-  mime: string;
   warning?: string;
 };
+
+type ApiImageSize = "1024x1024" | "1536x1024" | "1024x1536";
+
+type PreparedEditCanvas = PixelSize & {
+  buffer: Buffer;
+  sourceRect: PixelRect;
+  apiSize: ApiImageSize;
+};
+
+type SceneScaleEvaluation = {
+  confidence: number;
+  suggestedHeight: number;
+  horizonY: number;
+  reason: string;
+};
+
+type VisualProjectionEvaluation = {
+  productBox: PlacementBox;
+  geometrySimilarity: number;
+  placementConfidence: number;
+  realismScore: number;
+  roomPreservationScore: number;
+  openingCountMatches: boolean;
+  silhouetteMatches: boolean;
+  reasons: string[];
+};
+
+function dataUrl(buffer: Buffer, mimeType: string) {
+  return `data:${mimeType};base64,${buffer.toString("base64")}`;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function lockBoxToProductAtFloorAnchor(
+  suggestedHeight: number,
+  floorAnchor: { x: number; y: number },
+  productAspect: number,
+  source: PixelSize,
+) {
+  const normalizedAspect = getNormalizedBoxAspect(productAspect, source);
+  let height = clamp(suggestedHeight, 0.2, 0.72);
+  let width = height * normalizedAspect;
+  const availableWidth = Math.max(0.12, 2 * Math.min(floorAnchor.x, 1 - floorAnchor.x));
+  const availableHeight = Math.max(0.12, floorAnchor.y);
+  const fitScale = Math.min(
+    1,
+    (availableWidth * 0.96) / width,
+    (availableHeight * 0.98) / height,
+    0.9 / width,
+    0.78 / height,
+  );
+  width *= fitScale;
+  height *= fitScale;
+
+  return {
+    width,
+    height,
+    x: floorAnchor.x - width / 2,
+    y: floorAnchor.y - height,
+  };
+}
+
+async function analyseSceneScale(
+  client: OpenAI,
+  original: NormalizedImage,
+  requestedBox: PlacementBox,
+  productId: ProductId,
+) {
+  const kit = getApprovedProductReferenceKit(productId);
+  const product = getProductById(productId);
+  const floorAnchor = {
+    x: requestedBox.x + requestedBox.width / 2,
+    y: requestedBox.y + requestedBox.height,
+  };
+  const model =
+    getServerEnv("OPENAI_VISION_MODEL") ??
+    getServerEnv("OPENAI_CHAT_MODEL") ??
+    "gpt-5-mini";
+  const response = await client.responses.create({
+    model,
+    input: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: `Analyse this interior photograph for physically credible furniture scale.
+The customer selected floor anchor x=${floorAnchor.x.toFixed(4)}, y=${floorAnchor.y.toFixed(4)} in normalized full-image coordinates.
+The exact product is ${product.localized.en.name}, ${kit.dimensionsMm.width} mm wide × ${kit.dimensionsMm.height} mm high × ${kit.dimensionsMm.depth} mm deep.
+Infer the horizon, floor plane and scale from architecture, doors, windows, furniture and perspective. Return the normalized image height that this product should occupy when its base touches the selected anchor. Never move the selected floor anchor. Do not infer a different product aspect ratio.`,
+          },
+          {
+            type: "input_image",
+            image_url: dataUrl(original.buffer, "image/png"),
+            detail: "high",
+          },
+        ],
+      },
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: "scene_scale",
+        strict: true,
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            confidence: { type: "number", minimum: 0, maximum: 1 },
+            suggestedHeight: { type: "number", minimum: 0.1, maximum: 0.9 },
+            horizonY: { type: "number", minimum: 0, maximum: 1 },
+            reason: { type: "string" },
+          },
+          required: ["confidence", "suggestedHeight", "horizonY", "reason"],
+        },
+      },
+    },
+    max_output_tokens: 500,
+  });
+  const evaluation = JSON.parse(response.output_text) as SceneScaleEvaluation;
+
+  if (
+    !Number.isFinite(evaluation.confidence) ||
+    !Number.isFinite(evaluation.suggestedHeight)
+  ) {
+    throw new Error("Scene scale analysis returned invalid coordinates.");
+  }
+
+  return evaluation;
+}
+
+async function evaluateGeneratedProjection(
+  client: OpenAI,
+  generated: Buffer,
+  original: Buffer,
+  officialProductReference: Buffer,
+  frontOrthographic: Buffer,
+  productId: ProductId,
+  requestedBox: PlacementBox,
+) {
+  const kit = getApprovedProductReferenceKit(productId);
+  const model =
+    getServerEnv("OPENAI_VISION_MODEL") ??
+    getServerEnv("OPENAI_CHAT_MODEL") ??
+    "gpt-5-mini";
+  const response = await client.responses.create({
+    model,
+    input: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: `You are a strict furniture projection quality inspector.
+IMAGE 1 is the generated full-room result.
+IMAGE 2 is the original room.
+IMAGE 3 is the immutable approved product photograph.
+IMAGE 4 is the immutable front orthographic identity reference.
+
+The expected product has exactly ${kit.openings.length} openings and external dimensions ${kit.dimensionsMm.width} × ${kit.dimensionsMm.height} × ${kit.dimensionsMm.depth} mm. The requested normalized product box is x=${requestedBox.x.toFixed(4)}, y=${requestedBox.y.toFixed(4)}, width=${requestedBox.width.toFixed(4)}, height=${requestedBox.height.toFixed(4)}.
+
+Reject geometry drift, wrong opening count or layout, changed arch/base/depth, wrong overall proportions, floating floor contact, visible collage edges, CGI material, incorrect lighting, or unnecessary changes to the room. Return a tight normalized bounding box around the generated product in IMAGE 1 and conservative 0–1 scores. Scores above 0.9 require strong visual evidence.`,
+          },
+          { type: "input_image", image_url: dataUrl(generated, "image/png"), detail: "high" },
+          { type: "input_image", image_url: dataUrl(original, "image/png"), detail: "high" },
+          {
+            type: "input_image",
+            image_url: dataUrl(officialProductReference, "image/webp"),
+            detail: "high",
+          },
+          {
+            type: "input_image",
+            image_url: dataUrl(frontOrthographic, "image/png"),
+            detail: "high",
+          },
+        ],
+      },
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: "projection_quality",
+        strict: true,
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            productBox: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                x: { type: "number", minimum: 0, maximum: 1 },
+                y: { type: "number", minimum: 0, maximum: 1 },
+                width: { type: "number", minimum: 0.01, maximum: 1 },
+                height: { type: "number", minimum: 0.01, maximum: 1 },
+              },
+              required: ["x", "y", "width", "height"],
+            },
+            geometrySimilarity: { type: "number", minimum: 0, maximum: 1 },
+            placementConfidence: { type: "number", minimum: 0, maximum: 1 },
+            realismScore: { type: "number", minimum: 0, maximum: 1 },
+            roomPreservationScore: { type: "number", minimum: 0, maximum: 1 },
+            openingCountMatches: { type: "boolean" },
+            silhouetteMatches: { type: "boolean" },
+            reasons: { type: "array", items: { type: "string" } },
+          },
+          required: [
+            "productBox",
+            "geometrySimilarity",
+            "placementConfidence",
+            "realismScore",
+            "roomPreservationScore",
+            "openingCountMatches",
+            "silhouetteMatches",
+            "reasons",
+          ],
+        },
+      },
+    },
+    max_output_tokens: 900,
+  });
+
+  return JSON.parse(response.output_text) as VisualProjectionEvaluation;
+}
 
 function validateInputImage(file: File) {
   const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
 
   if (!allowedTypes.includes(file.type)) {
-    throw new Error("Formats acceptés : png, jpg, webp.");
+    throw new Error("Formats accepted: png, jpg, webp.");
   }
 
   if (file.size > MAX_UPLOAD_BYTES) {
-    throw new Error("L’image est trop lourde. Limite actuelle : 12 Mo.");
+    throw new Error("The room image is too large. Current limit: 12 MB.");
   }
 }
 
-function clampBox(box: PlacementBox): PlacementBox {
-  return {
-    x: Math.min(1, Math.max(0, box.x)),
-    y: Math.min(1, Math.max(0, box.y)),
-    width: Math.min(1, Math.max(0.05, box.width)),
-    height: Math.min(1, Math.max(0.05, box.height)),
-  };
+function boxWasAdjusted(original: PlacementBox, next: PlacementBox) {
+  return (
+    Math.abs(original.x - next.x) > 0.0005 ||
+    Math.abs(original.y - next.y) > 0.0005 ||
+    Math.abs(original.width - next.width) > 0.0005 ||
+    Math.abs(original.height - next.height) > 0.0005
+  );
 }
 
 async function normalizeImage(file: File): Promise<NormalizedImage> {
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const image = sharp(buffer, { failOn: "none" }).rotate();
-  const metadata = await image.metadata();
+  const source = Buffer.from(await file.arrayBuffer());
+  const oriented = await sharp(source, { failOn: "none" }).rotate().png().toBuffer();
+  const metadata = await sharp(oriented).metadata();
 
   if (!metadata.width || !metadata.height) {
-    throw new Error("Impossible de lire les dimensions de l’image fournie.");
+    throw new Error("Unable to read the room image dimensions.");
   }
 
-  const resized = image.resize({
-    width: metadata.width >= metadata.height ? MAX_EDGE : undefined,
-    height: metadata.height > metadata.width ? MAX_EDGE : undefined,
-    fit: "inside",
-    withoutEnlargement: true,
-  });
-  const output = await resized.png().toBuffer();
+  const output = await sharp(oriented)
+    .resize({
+      width: metadata.width >= metadata.height ? MAX_EDGE : undefined,
+      height: metadata.height > metadata.width ? MAX_EDGE : undefined,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .png()
+    .toBuffer();
   const outputMetadata = await sharp(output).metadata();
 
   if (!outputMetadata.width || !outputMetadata.height) {
-    throw new Error("Impossible de normaliser l’image fournie.");
+    throw new Error("Unable to normalize the room image.");
   }
-
-  const warning =
-    outputMetadata.width !== metadata.width || outputMetadata.height !== metadata.height
-      ? "L’image a été réduite automatiquement pour garder une génération stable."
-      : undefined;
 
   return {
     buffer: output,
     width: outputMetadata.width,
     height: outputMetadata.height,
-    mime: "image/png",
-    warning,
+    warning:
+      outputMetadata.width !== metadata.width || outputMetadata.height !== metadata.height
+        ? "The room image was reduced without cropping to keep the projection stable."
+        : undefined,
   };
 }
 
-function buildMaskBuffer(width: number, height: number, box: PlacementBox) {
-  const mask = Buffer.alloc(width * height * 4, 255);
-  const safeBox = clampBox(box);
-  const startX = Math.round(safeBox.x * width);
-  const startY = Math.round(safeBox.y * height);
-  const rectWidth = Math.round(safeBox.width * width);
-  const rectHeight = Math.round(safeBox.height * height);
-  const endX = Math.min(width, startX + rectWidth);
-  const endY = Math.min(height, startY + rectHeight);
+function chooseApiCanvas(source: PixelSize): PixelSize & { apiSize: ApiImageSize } {
+  const sourceAspect = source.width / source.height;
+  const options = [
+    { width: 1024, height: 1024, apiSize: "1024x1024" as const },
+    { width: 1536, height: 1024, apiSize: "1536x1024" as const },
+    { width: 1024, height: 1536, apiSize: "1024x1536" as const },
+  ];
 
-  for (let y = startY; y < endY; y += 1) {
-    for (let x = startX; x < endX; x += 1) {
-      const index = (y * width + x) * 4;
-      mask[index] = 255;
-      mask[index + 1] = 255;
-      mask[index + 2] = 255;
-      mask[index + 3] = 0;
+  return options.reduce((best, option) => {
+    const bestDelta = Math.abs(Math.log(sourceAspect / (best.width / best.height)));
+    const optionDelta = Math.abs(Math.log(sourceAspect / (option.width / option.height)));
+    return optionDelta < bestDelta ? option : best;
+  });
+}
+
+async function prepareEditCanvas(image: NormalizedImage): Promise<PreparedEditCanvas> {
+  const canvas = chooseApiCanvas(image);
+  const fitted = getContainRect(canvas, image);
+  const sourceRect = {
+    x: Math.round(fitted.x),
+    y: Math.round(fitted.y),
+    width: Math.round(fitted.width),
+    height: Math.round(fitted.height),
+  };
+  const contained = await sharp(image.buffer)
+    .resize({ width: sourceRect.width, height: sourceRect.height, fit: "fill" })
+    .png()
+    .toBuffer();
+  const buffer = await sharp({
+    create: {
+      width: canvas.width,
+      height: canvas.height,
+      channels: 4,
+      background: { r: 232, g: 230, b: 224, alpha: 1 },
+    },
+  })
+    .composite([{ input: contained, left: sourceRect.x, top: sourceRect.y }])
+    .png()
+    .toBuffer();
+
+  return { ...canvas, buffer, sourceRect };
+}
+
+async function restoreOriginalPhotoFrame(
+  editedBuffer: Buffer,
+  canvas: PreparedEditCanvas,
+  original: NormalizedImage,
+) {
+  const metadata = await sharp(editedBuffer).metadata();
+  if (!metadata.width || !metadata.height) {
+    throw new Error("The generated projection has no usable dimensions.");
+  }
+
+  const scaleX = metadata.width / canvas.width;
+  const scaleY = metadata.height / canvas.height;
+  const left = Math.max(0, Math.round(canvas.sourceRect.x * scaleX));
+  const top = Math.max(0, Math.round(canvas.sourceRect.y * scaleY));
+  const width = Math.min(
+    metadata.width - left,
+    Math.max(1, Math.round(canvas.sourceRect.width * scaleX)),
+  );
+  const height = Math.min(
+    metadata.height - top,
+    Math.max(1, Math.round(canvas.sourceRect.height * scaleY)),
+  );
+
+  return sharp(editedBuffer)
+    .extract({ left, top, width, height })
+    .resize({ width: original.width, height: original.height, fit: "fill" })
+    .png()
+    .toBuffer();
+}
+
+async function outsideIntegrationChangeRatio(
+  baseline: Buffer,
+  generated: Buffer,
+  box: PlacementBox,
+  size: PixelSize,
+) {
+  const [before, after] = await Promise.all([
+    sharp(baseline).ensureAlpha().raw().toBuffer(),
+    sharp(generated).ensureAlpha().raw().toBuffer(),
+  ]);
+  const left = clamp(Math.floor((box.x - box.width * 0.18) * size.width), 0, size.width);
+  const right = clamp(
+    Math.ceil((box.x + box.width * 1.18) * size.width),
+    0,
+    size.width,
+  );
+  const top = clamp(Math.floor((box.y - box.height * 0.1) * size.height), 0, size.height);
+  const bottom = clamp(
+    Math.ceil((box.y + box.height * 1.16) * size.height),
+    0,
+    size.height,
+  );
+  let changed = 0;
+  let inspected = 0;
+
+  for (let y = 0; y < size.height; y += 1) {
+    for (let x = 0; x < size.width; x += 1) {
+      if (x >= left && x <= right && y >= top && y <= bottom) continue;
+
+      const offset = (y * size.width + x) * 4;
+      const delta =
+        Math.abs(before[offset] - after[offset]) +
+        Math.abs(before[offset + 1] - after[offset + 1]) +
+        Math.abs(before[offset + 2] - after[offset + 2]);
+      inspected += 1;
+      if (delta > 42) changed += 1;
     }
   }
 
-  return sharp(mask, { raw: { width, height, channels: 4 } }).png().toBuffer();
+  return inspected ? changed / inspected : 0;
 }
 
-function resolveProjectionFormat(format: FormatId, box: PlacementBox) {
-  if (format !== "undecided") {
-    return { format, warning: undefined };
-  }
-
-  const inferredFormat: Exclude<FormatId, "undecided"> =
-    box.width > box.height ? "horizontal" : "vertical";
+function placementPixels(box: PlacementBox, canvas: PixelSize) {
+  const left = Math.max(0, Math.round(box.x * canvas.width));
+  const top = Math.max(0, Math.round(box.y * canvas.height));
 
   return {
-    format: inferredFormat,
-    warning:
-      "Le format n’était pas défini. La simulation a été préparée automatiquement en version " +
-      (inferredFormat === "horizontal" ? "horizontale" : "verticale") +
-      ".",
+    left,
+    top,
+    width: Math.min(canvas.width - left, Math.max(1, Math.round(box.width * canvas.width))),
+    height: Math.min(canvas.height - top, Math.max(1, Math.round(box.height * canvas.height))),
   };
 }
 
-function usagePrompt(usage: UsageId) {
-  switch (usage) {
+async function createPhotographicEditMask(canvas: PixelSize, box: PlacementBox) {
+  const rect = placementPixels(box, canvas);
+  const horizontalPadding = Math.max(24, Math.round(rect.width * 0.18));
+  const topPadding = Math.max(20, Math.round(rect.height * 0.1));
+  const floorPadding = Math.max(28, Math.round(rect.height * 0.16));
+  const editRect = {
+    left: Math.max(0, rect.left - horizontalPadding),
+    top: Math.max(0, rect.top - topPadding),
+    right: Math.min(canvas.width, rect.left + rect.width + horizontalPadding),
+    bottom: Math.min(canvas.height, rect.top + rect.height + floorPadding),
+  };
+  const pixels = Buffer.alloc(canvas.width * canvas.height * 4, 255);
+
+  for (let y = editRect.top; y < editRect.bottom; y += 1) {
+    for (let x = editRect.left; x < editRect.right; x += 1) {
+      pixels[(y * canvas.width + x) * 4 + 3] = 0;
+    }
+  }
+
+  return sharp(pixels, {
+    raw: { width: canvas.width, height: canvas.height, channels: 4 },
+  })
+    .png()
+    .toBuffer();
+}
+
+function placementInstruction(mode: PlacementMode) {
+  switch (mode) {
     case "against-wall":
-      return "Le meuble est prévu contre un mur. Le mur doit rester visible à travers les niches.";
+      return "The product stands against the wall; the wall remains visible through every opening.";
     case "divider":
-      return "Le meuble agit comme séparation douce au centre de la pièce. L’espace derrière doit rester visible à travers les niches.";
+      return "The product is freestanding as a room divider; the room remains visible through every opening.";
     case "behind-sofa":
-      return "Le meuble doit se lire comme un fond de canapé ou une séparation basse cohérente.";
+      return "The product stands behind the sofa while keeping the supplied placement unchanged.";
     case "under-window":
-      return "Le meuble doit rester bas, aligné sous une ouverture ou une fenêtre si la photo le permet.";
-    case "other":
+      return "The product stands under the window while keeping the supplied placement unchanged.";
+    case "bedside":
+      return "The product stands beside the bed while keeping the supplied placement unchanged.";
     default:
-      return "Le placement doit rester plausible, sans changer la pièce du client.";
+      return "Keep the supplied placement unchanged.";
   }
 }
 
-function ambiancePrompt(ambiance: AmbianceId) {
-  switch (ambiance) {
-    case "sage-teal":
-      return "Garder une ambiance légèrement plus fraîche et vert grisé, sans recolorer la pièce du client.";
-    case "soft-butter":
-      return "Garder une ambiance lumineuse et douce, avec une sensation beurre pâle très discrète.";
-    case "plaster-rose":
-      return "Garder une ambiance chaude et délicate, légèrement rose plâtre, sans effet décoratif forcé.";
-    case "neutral":
-    default:
-      return "Rester très neutre, calme et premium.";
-  }
+function buildPrompt(input: {
+  productId: ProductId;
+  finishId: FinishId;
+  placementMode: PlacementMode;
+  transform: PlacementTransform;
+  message: string;
+}) {
+  const kit = getApprovedProductReferenceKit(input.productId);
+  const product = getProductById(input.productId);
+  const finish = getFinishById(input.finishId);
+  const box = input.transform.box;
+  const note = input.message.trim().slice(0, 320);
+
+  return `TASK — Regenerate one complete, coherent, photorealistic interior photograph with the approved product naturally present in the selected location. The result must look like one camera exposure, never a cutout, overlay, pasted render or collage.
+
+IMAGE 1 — Original room and primary composition. Preserve its camera, crop, architecture, furniture, objects and visual identity.
+IMAGE 2 — Official ${product.localized.en.name} photograph in ${finish.labels.en}. This is the immutable product identity and finish reference. Copy the exact silhouette, proportions, opening count, opening layout, junction thickness, rounded edges, recessed base and material response.
+IMAGE 3 — Approved front orthographic geometry reference. It proves the exact front proportions and opening coordinates.
+IMAGE 4 — Approved 30-degree geometry reference. It proves the exact depth and side proportions.
+
+IMMUTABLE PRODUCT
+${product.localized.en.name}, reference kit ${kit.version}.
+External dimensions: ${kit.dimensionsMm.width} mm wide × ${kit.dimensionsMm.height} mm high × ${kit.dimensionsMm.depth} mm deep.
+Exactly ${kit.openings.length} openings in the coordinates shown on Image 3. Open-backed. Continuous solid base. No feet.
+The visible rails, uprights and junctions must keep the same ${kit.wallThicknessMm} mm material density as the approved reference. Do not make the horizontal model thinner or lighter.
+
+PLACEMENT
+Normalized box: x ${box.x.toFixed(4)}, y ${box.y.toFixed(4)}, width ${box.width.toFixed(4)}, height ${box.height.toFixed(4)}.
+Yaw: ${input.transform.yawDeg.toFixed(0)} degrees. Floor anchor: ${input.transform.floorAnchor.x.toFixed(4)}, ${input.transform.floorAnchor.y.toFixed(4)}.
+Scale was inferred automatically from the room perspective, known architectural cues and the canonical metric dimensions. The customer selected only the floor anchor.
+${placementInstruction(input.placementMode)}
+The product must fill the supplied box, with its base touching the supplied floor anchor. The floor contact and the selected anchor are immutable. Infer room perspective from Image 1, but do not alter the approved front width-to-height ratio. Respect believable occlusion by existing foreground objects.
+
+ALLOWED CHANGES
+Inside the supplied edit mask, rebuild the local room pixels and the product together as one photograph. Match lens perspective, exposure, light direction, colour temperature, contact shadow, indirect bounce light, edge softness, depth of field and photographic grain. The surface is a premium hand-applied mineral plaster: silky matte, approximately 5–8 gloss units, smooth at normal viewing distance, with only faint tonal clouding and microscopic trowel variation visible in grazing light.
+
+FORBIDDEN
+Never invent, remove, merge, close or reshape an opening. Never change the arch, base, depth, rail thickness or proportions. Never make the product plastic, lacquered, glossy, sandy, embossed, grainy or CGI-looking. Never crop or redesign the room. Never copy decorative objects from the reference photograph into the user's room. No text, logo or watermark.${note ? `\n\nUSER NOTE — ${note}` : ""}`;
 }
 
-function buildProjectionPrompt(
-  format: Exclude<FormatId, "undecided">,
-  usage: UsageId,
-  ambiance: AmbianceId,
-  message: string,
-) {
-  const variant = getVariantByFormat(format);
-  const productDescription =
-    format === "vertical"
-      ? "Version verticale : 102 cm largeur × 184 cm hauteur × 42 cm profondeur, meuble monobloc plus haut que large, 4 niches verticales arrondies à gauche, 1 grande niche en arche dominante en haut à droite, 2 niches horizontales arrondies sous l’arche, 1 grande niche horizontale basse à droite, sans fond, base pleine continue légèrement rentrée."
-      : "Version horizontale : 184 cm largeur × 120 cm hauteur × 42 cm profondeur, meuble monobloc bas et large, 3 niches verticales arrondies à gauche, 1 grande niche en arche au centre, 2 niches horizontales arrondies à droite, 2 grandes niches basses horizontales, sans fond, base pleine continue légèrement rentrée.";
-
-  const clientNote = message.trim()
-    ? `Tenir compte de cette note client si elle reste compatible avec la photo : ${message.trim()}`
-    : "Aucune note client supplémentaire.";
-
-  return [
-    "À partir de la photo fournie, intégrer de manière ultra réaliste le meuble RAVA Éditions — Cabinet Mura dans l’espace existant.",
-    "Respecter strictement la perspective, l’échelle, la lumière, les ombres, les couleurs et les matériaux de la photo d’origine.",
-    "Ne pas modifier la pièce du client. Ne pas changer le sol, les murs, les fenêtres ou les meubles existants. Ajouter seulement le meuble.",
-    "Considérer la zone transparente du masque comme une implantation indicative : elle donne le centre et l’emprise approximative, mais l’échelle finale doit être affinée à partir de la perspective, du sol, des murs, des ouvertures et du mobilier visible.",
-    `${variant.piece} — ${variant.title}.`,
-    productDescription,
-    usagePrompt(usage),
-    ambiancePrompt(ambiance),
-    "Le meuble est à finition ivoire chaud mate texturée, effet minéral doux, avec des niches ouvertes sans fond et une base pleine continue légèrement rentrée.",
-    "Le rendu doit être propre, crédible, non contractuel, sans effet IA, sans rendu 3D, sans texture plastique, sans proportions fausses.",
-    clientNote,
-  ].join(" ");
+async function absolutePublicFile(publicPath: string) {
+  return readFile(join(process.cwd(), "public", publicPath.replace(/^\//, "")));
 }
 
-async function loadReferenceFiles(format: Exclude<FormatId, "undecided">) {
-  const variant = getVariantByFormat(format);
-
-  return Promise.all(
-    variant.projectionReferences.map(async (relativePath, index) => {
-      const absolutePath = join(process.cwd(), "public", relativePath.replace(/^\//, ""));
-      const buffer = await readFile(absolutePath);
-      return new File([new Uint8Array(buffer)], `reference-${index + 1}.png`, {
-        type: "image/png",
-      });
-    }),
-  );
-}
-
-export async function generateProjection(
-  input: GenerateProjectionInput,
-): Promise<ProjectionResult> {
+export async function generateProjection(input: GenerateProjectionInput): Promise<ProjectionArtifact> {
   validateInputImage(input.file);
+  const apiKey = getServerEnv("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
 
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error(
-      "OPENAI_API_KEY manquant. Configure la clé pour activer la projection instantanée.",
+  const client = new OpenAI({ apiKey });
+  const kit = getApprovedProductReferenceKit(input.productId);
+  input.onProgress?.("analysing");
+  const original = await normalizeImage(input.file);
+  const initialFloorAnchor = {
+    x: input.placementBox.x + input.placementBox.width / 2,
+    y: input.placementBox.y + input.placementBox.height,
+  };
+  let scaleAnalysis: SceneScaleEvaluation | null = null;
+  let scaleWarning: string | undefined;
+
+  try {
+    scaleAnalysis = await analyseSceneScale(
+      client,
+      original,
+      input.placementBox,
+      input.productId,
     );
+  } catch {
+    scaleWarning =
+      "Automatic room scale analysis was unavailable; the perspective-safe placement estimate was used.";
   }
 
-  const requestId = crypto.randomUUID();
-  const normalized = await normalizeImage(input.file);
-  const resolution = resolveProjectionFormat(input.format, input.placementBox);
-  const prompt = buildProjectionPrompt(
-    resolution.format,
-    input.usage,
-    input.ambiance,
-    input.message,
+  const suggestedHeight =
+    scaleAnalysis && scaleAnalysis.confidence >= 0.55
+      ? scaleAnalysis.suggestedHeight
+      : input.placementBox.height;
+  const sourceBox = lockBoxToProductAtFloorAnchor(
+    suggestedHeight,
+    initialFloorAnchor,
+    kit.dimensionsMm.width / kit.dimensionsMm.height,
+    original,
   );
-  const maskBuffer = await buildMaskBuffer(
-    normalized.width,
-    normalized.height,
-    input.placementBox,
+  const canvas = await prepareEditCanvas(original);
+  const canvasBox = mapPlacementBoxToContainedCanvas(sourceBox, canvas.sourceRect, canvas);
+  const transform: PlacementTransform = {
+    box: canvasBox,
+    yawDeg: 0,
+    floorAnchor: {
+      x: canvasBox.x + canvasBox.width / 2,
+      y: canvasBox.y + canvasBox.height,
+    },
+  };
+  input.onProgress?.("rendering");
+  const editMask = await createPhotographicEditMask(canvas, canvasBox);
+  const basePrompt = buildPrompt({
+    productId: input.productId,
+    finishId: input.finishId,
+    placementMode: input.placementMode,
+    transform,
+    message: input.message,
+  });
+  const officialProductReference = await absolutePublicFile(
+    getProductById(input.productId).finishes[input.finishId].packshot.src,
   );
-  const sourceImage = new File([new Uint8Array(normalized.buffer)], "room.png", {
-    type: normalized.mime,
-  });
-  const maskImage = new File([new Uint8Array(maskBuffer)], "mask.png", {
-    type: "image/png",
-  });
-  const references = await loadReferenceFiles(resolution.format);
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const size = resolution.format === "horizontal" ? "1536x1024" : "1024x1536";
-  const response = await client.images.edit({
-    model: "gpt-image-1.5",
-    image: [sourceImage, ...references],
-    mask: maskImage,
-    prompt,
-    size,
-    quality: "medium",
-    input_fidelity: "high",
-    output_format: "webp",
-    background: "opaque",
-  });
+  const frontOrthographic = await absolutePublicFile(kit.assets.frontOrthographic);
+  const frontRight30 = await absolutePublicFile(kit.assets.frontRight30);
+  const baseline = await restoreOriginalPhotoFrame(canvas.buffer, canvas, original);
 
-  const edited = response.data?.[0];
-  const imageData = edited?.b64_json;
+  async function runAttempt(prompt: string) {
+    input.onProgress?.("integrating");
+    const response = await client.images.edit({
+      model: "gpt-image-2",
+      image: [
+        await toFile(canvas.buffer, "01-original-room.png", { type: "image/png" }),
+        await toFile(officialProductReference, "02-official-product-reference.webp", {
+          type: "image/webp",
+        }),
+        await toFile(frontOrthographic, "03-approved-front-orthographic.png", {
+          type: "image/png",
+        }),
+        await toFile(frontRight30, "04-approved-front-right-30.png", {
+          type: "image/png",
+        }),
+      ],
+      mask: await toFile(editMask, "photographic-integration-mask.png", {
+        type: "image/png",
+      }),
+      prompt,
+      quality: "high",
+      size: canvas.apiSize,
+      output_format: "png",
+    });
+    const base64 = response.data?.[0]?.b64_json;
+    if (!base64) throw new Error("OpenAI returned no usable projection image.");
 
-  if (!imageData) {
-    throw new Error("La réponse IA ne contenait pas d’image exploitable.");
+    const restored = await restoreOriginalPhotoFrame(
+      Buffer.from(base64, "base64"),
+      canvas,
+      original,
+    );
+    input.onProgress?.("verifying");
+    const visual = await evaluateGeneratedProjection(
+      client,
+      restored,
+      original.buffer,
+      officialProductReference,
+      frontOrthographic,
+      input.productId,
+      sourceBox,
+    );
+    const outsideChange = await outsideIntegrationChangeRatio(
+      baseline,
+      restored,
+      sourceBox,
+      original,
+    );
+    const scores = evaluateProjectionQuality({
+      requestedBox: sourceBox,
+      renderedBox: visual.productBox,
+      geometryLocked: visual.openingCountMatches && visual.silhouetteMatches,
+      geometrySimilarity: visual.geometrySimilarity,
+      placementConfidence: visual.placementConfidence,
+      realismScore: visual.realismScore,
+      roomPreservationScore: visual.roomPreservationScore,
+      outsideIntegrationChangeRatio: outsideChange,
+    });
+    scores.reasons.push(...visual.reasons.filter((reason) => !scores.reasons.includes(reason)));
+
+    return { restored, scores };
   }
 
-  const warnings = [normalized.warning, resolution.warning].filter(Boolean);
+  let finalPrompt = basePrompt;
+  let attempt = await runAttempt(finalPrompt);
+
+  if (!attempt.scores.passed) {
+    finalPrompt = `${basePrompt}
+
+CORRECTION REQUIRED AFTER AUTOMATIC QUALITY REVIEW
+The previous result was rejected for: ${attempt.scores.reasons.join(", ")}.
+Regenerate from the original room and immutable references. Correct every listed issue while keeping the exact floor anchor, bounding box, opening layout and room outside the mask unchanged.`;
+    attempt = await runAttempt(finalPrompt);
+  }
+
+  if (!attempt.scores.passed) throw new ProjectionQualityError(attempt.scores);
+
+  const restored = await sharp(attempt.restored).webp({ quality: 92 }).toBuffer();
+  const warningParts = [
+    original.warning,
+    scaleWarning,
+    scaleAnalysis && scaleAnalysis.confidence < 0.55
+      ? "The room contained too few reliable scale cues; a conservative perspective estimate was used."
+      : undefined,
+    boxWasAdjusted(input.placementBox, sourceBox)
+      ? "Scale was calculated from the room while the selected floor anchor was preserved."
+      : undefined,
+  ].filter(Boolean);
 
   return {
-    projectionImage: `data:image/webp;base64,${imageData}`,
-    promptDigest: `${resolution.format} | ${input.usage} | ${input.ambiance}`,
-    requestId,
-    warning: warnings.length > 0 ? warnings.join(" ") : undefined,
-    resolvedFormat: resolution.format,
+    projectionImage: `data:image/webp;base64,${restored.toString("base64")}`,
+    promptDigest: createHash("sha256").update(finalPrompt).digest("hex").slice(0, 20),
+    requestId: randomUUID(),
+    warning: warningParts.length ? warningParts.join(" ") : undefined,
+    productId: input.productId,
+    referenceKitVersion: kit.version,
+    promptVersion: PROMPT_VERSION,
+    rendererVersion: "reference-guided-full-photo-v2",
+    scores: attempt.scores,
   };
 }

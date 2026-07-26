@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1840 1020" fill="none">
+  <defs>
+    <mask id="portee-o2-cutout-mask">
+      <rect width="1840" height="1020" fill="black"/>
+      <rect width="1840" height="1020" rx="52" fill="white"/>
+      <rect x="80" y="80" width="300" height="227" rx="60" fill="black"/>
+      <rect x="80" y="387" width="300" height="227" rx="60" fill="black"/>
+      <rect x="80" y="694" width="300" height="226" rx="60" fill="black"/>
+      <path d="M460 520V225C460 145 525 80 605 80H895C975 80 1040 145 1040 225V520Z" fill="black"/>
+      <rect x="460" y="600" width="580" height="320" rx="65" fill="black"/>
+      <rect x="1120" y="80" width="640" height="200" rx="60" fill="black"/>
+      <rect x="1120" y="360" width="640" height="200" rx="60" fill="black"/>
+      <rect x="1120" y="640" width="640" height="280" rx="65" fill="black"/>
+    </mask>
+  </defs>
+  <rect width="1840" height="1020" fill="#ffffff" mask="url(#portee-o2-cutout-mask)"/>
+</svg>

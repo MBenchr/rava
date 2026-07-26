@@ -1,0 +1,110 @@
+{
+  "id": "portee-o2",
+  "version": "2026.07.18-1",
+  "status": "approved",
+  "dimensionsMm": {
+    "width": 1840,
+    "height": 1200,
+    "depth": 420
+  },
+  "outerRadiusMm": 52,
+  "wallThicknessMm": 80,
+  "plinth": {
+    "heightMm": 120,
+    "recessMm": 25
+  },
+  "openings": [
+    {
+      "id": "left-1",
+      "kind": "rounded-rect",
+      "x": 80,
+      "y": 80,
+      "width": 300,
+      "height": 287,
+      "radius": 65
+    },
+    {
+      "id": "left-2",
+      "kind": "rounded-rect",
+      "x": 80,
+      "y": 447,
+      "width": 300,
+      "height": 287,
+      "radius": 65
+    },
+    {
+      "id": "left-3",
+      "kind": "rounded-rect",
+      "x": 80,
+      "y": 814,
+      "width": 300,
+      "height": 286,
+      "radius": 65
+    },
+    {
+      "id": "arch",
+      "kind": "arch",
+      "x": 460,
+      "y": 80,
+      "width": 580,
+      "height": 520,
+      "radius": 170,
+      "shoulderY": 250
+    },
+    {
+      "id": "centre-low",
+      "kind": "rounded-rect",
+      "x": 460,
+      "y": 680,
+      "width": 580,
+      "height": 400,
+      "radius": 70
+    },
+    {
+      "id": "right-1",
+      "kind": "rounded-rect",
+      "x": 1120,
+      "y": 80,
+      "width": 640,
+      "height": 220,
+      "radius": 65
+    },
+    {
+      "id": "right-2",
+      "kind": "rounded-rect",
+      "x": 1120,
+      "y": 370,
+      "width": 640,
+      "height": 220,
+      "radius": 65
+    },
+    {
+      "id": "right-3",
+      "kind": "rounded-rect",
+      "x": 1120,
+      "y": 680,
+      "width": 640,
+      "height": 400,
+      "radius": 70
+    }
+  ],
+  "maskPath": "/reference/viaire-portee-mask.svg",
+  "sourceReference": "/viaire/portee-o2/packshots/viaire-portee-chalk-exact-front.webp",
+  "schemaVersion": 1,
+  "geometryChecksum": "8ef7ec2c69ca908ec59378aec1749a74a4634dcd2ce6722a977c6dc709726833",
+  "meshBoundsMm": {
+    "width": 1840,
+    "height": 1200,
+    "depth": 420
+  },
+  "generatedAt": "2026-07-25T12:31:23.569Z",
+  "generatedFrom": "modules/projection/core/reference-kits.data.json",
+  "assets": {
+    "frontOrthographic": "front-orthographic.png",
+    "frontRight30": "front-right-30.png",
+    "rearLeft30": "rear-left-30.png",
+    "identityBoard": "identity-board.png",
+    "glb": "product.glb",
+    "usdz": "product.usdz"
+  }
+}

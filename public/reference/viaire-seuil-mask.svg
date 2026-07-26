@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 1840" fill="none">
+  <defs>
+    <mask id="elan-o1-cutout-mask">
+      <rect width="1020" height="1840" fill="black"/>
+      <rect width="1020" height="1840" rx="52" fill="white"/>
+      <rect x="80" y="80" width="230" height="355" rx="65" fill="black"/>
+      <rect x="80" y="515" width="230" height="355" rx="65" fill="black"/>
+      <rect x="80" y="950" width="230" height="355" rx="65" fill="black"/>
+      <rect x="80" y="1385" width="230" height="355" rx="65" fill="black"/>
+      <path d="M390 620V250C390 156 466 80 560 80H770C864 80 940 156 940 250V620Z" fill="black"/>
+      <rect x="390" y="690" width="550" height="230" rx="65" fill="black"/>
+      <rect x="390" y="990" width="550" height="230" rx="65" fill="black"/>
+      <rect x="390" y="1290" width="550" height="450" rx="70" fill="black"/>
+    </mask>
+  </defs>
+  <rect width="1020" height="1840" fill="#ffffff" mask="url(#elan-o1-cutout-mask)"/>
+</svg>

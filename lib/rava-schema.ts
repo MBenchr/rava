@@ -1,59 +1,130 @@
-import { productVariants, siteMeta } from "@/lib/rava-content";
+import {
+  brandIdentity,
+  finishes,
+  getFinishLabel,
+  getFinishPriceCents,
+  getLocalizedRoute,
+  getProductById,
+  getProductCopy,
+  getSiteCopy,
+  productList,
+  siteMeta,
+  type FinishId,
+  type Locale,
+  type ProductId,
+} from "@/lib/rava-content";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.rava-editions.com";
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://viaire.fr").replace(/\/$/, "");
 
-export function buildStructuredData() {
-  const productGroup = {
-    "@context": "https://schema.org",
-    "@type": "ProductGroup",
-    "@id": `${siteUrl}#cabinet-mura-group`,
-    name: "Cabinet Mura",
-    brand: {
-      "@type": "Brand",
-      name: siteMeta.name,
-    },
-    description: siteMeta.description,
-    url: siteUrl,
-    variesBy: [
-      "https://schema.org/size",
-      "https://schema.org/color",
-      "https://schema.org/material",
-    ],
-    hasVariant: productVariants.map((variant) => ({
-      "@type": "Product",
-      "@id": `${siteUrl}#cabinet-mura-${variant.id}`,
-      name: `${variant.piece} — ${variant.title}`,
-      sku: variant.id === "vertical" ? "RAVA-MURA-001" : "RAVA-MURA-002",
-      color: "Ivoire chaud",
-      material: "Finition mate texturée effet minéral",
-      size: variant.dimensions,
-      image: [`${siteUrl}${variant.image.src}`],
-      description: `${variant.intro} ${variant.usage}`,
-      offers: {
-        "@type": "Offer",
-        price: "2000",
-        priceCurrency: "EUR",
-        availability: "https://schema.org/PreOrder",
-        url: siteUrl,
-        category: "Made to order",
-        seller: {
-          "@type": "Organization",
-          name: siteMeta.name,
-        },
-      },
-    })),
-  };
+function absoluteUrl(pathname: string) {
+  return pathname.startsWith("http") ? pathname : `${siteUrl}${pathname}`;
+}
 
-  const organization = {
+function buildOrganization() {
+  return {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": `${siteUrl}#organization`,
-    name: siteMeta.name,
+    name: brandIdentity.name,
     url: siteUrl,
     email: siteMeta.leadEmail,
-    description: siteMeta.baseline,
+    description: brandIdentity.signatures.en,
   };
-
-  return [organization, productGroup];
 }
 
+export function buildHomeStructuredData(locale: Locale = "en") {
+  const copy = getSiteCopy(locale);
+  const homePath = locale === "fr" ? "/fr" : "/";
+  const itemList = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${siteUrl}${homePath}#first-edition`,
+    name: brandIdentity.collectionLabels[locale],
+    itemListElement: productList.map((product, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: absoluteUrl(getLocalizedRoute(product.id, locale)),
+      name: getProductCopy(product.id, locale).name,
+      image: absoluteUrl(product.cardImage.src),
+    })),
+  };
+
+  return [
+    buildOrganization(),
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${siteUrl}#website`,
+      url: siteUrl,
+      name: brandIdentity.name,
+      inLanguage: locale === "fr" ? "fr-FR" : "en-GB",
+      publisher: { "@id": `${siteUrl}#organization` },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "@id": `${siteUrl}${homePath}#collection`,
+      url: absoluteUrl(homePath),
+      name: copy.title,
+      description: copy.description,
+      inLanguage: locale === "fr" ? "fr-FR" : "en-GB",
+      mainEntity: { "@id": `${siteUrl}${homePath}#first-edition` },
+    },
+    itemList,
+  ];
+}
+
+export function buildProductStructuredData(productId: ProductId, locale: Locale = "en") {
+  const product = getProductById(productId);
+  const copy = getProductCopy(productId, locale);
+  const route = getLocalizedRoute(productId, locale);
+  const variants = finishes.map((finish) => buildVariant(productId, finish.id, locale));
+
+  return [
+    buildOrganization(),
+    {
+      "@context": "https://schema.org",
+      "@type": "ProductGroup",
+      "@id": `${siteUrl}${route}#group`,
+      productGroupID: product.code.replace(/\s+/g, "-"),
+      name: `${copy.name} — ${copy.descriptor}`,
+      brand: { "@type": "Brand", name: brandIdentity.name },
+      description: `${copy.statement} ${copy.story}`,
+      url: absoluteUrl(route),
+      category: copy.descriptor,
+      image: [absoluteUrl(product.hero.src), absoluteUrl(product.cardImage.src)],
+      variesBy: ["https://schema.org/color"],
+      hasVariant: variants,
+    },
+  ];
+}
+
+function buildVariant(productId: ProductId, finishId: FinishId, locale: Locale) {
+  const product = getProductById(productId);
+  const copy = getProductCopy(productId, locale);
+  const finish = product.finishes[finishId];
+  const price = getFinishPriceCents(productId, finishId)!;
+  const route = `${getLocalizedRoute(productId, locale)}?finish=${finishId}`;
+
+  return {
+    "@type": "Product",
+    "@id": `${siteUrl}${route}`,
+    sku: `${productId}-${finishId}`.toUpperCase(),
+    name: `${copy.name} — ${getFinishLabel(finishId, locale)}`,
+    color: getFinishLabel(finishId, locale),
+    material: locale === "fr" ? "Surface minérale mate texturée" : "Textured matte mineral surface",
+    image: [absoluteUrl(finish.packshot.src)],
+    description: copy.shortStatement,
+    url: absoluteUrl(route),
+    size: product.dimensionsLabel,
+    offers: {
+      "@type": "Offer",
+      price: price / 100,
+      priceCurrency: "EUR",
+      availability: "https://schema.org/InStock",
+      url: absoluteUrl(route),
+      seller: { "@id": `${siteUrl}#organization` },
+      itemCondition: "https://schema.org/NewCondition",
+    },
+  };
+}

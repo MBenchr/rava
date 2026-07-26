@@ -1,30 +1,84 @@
-# RAVA Éditions — V2 Next.js
+# VIAIRE
 
-Rebuild complet de la landing page `Cabinet Mura` en `Next.js 16 + TypeScript + Tailwind 4`.
+International storefront and exact product-projection engine for VIAIRE.
 
 ## Stack
 
-- `app/` : App Router, pages statiques et routes API
-- `components/` : sections UI et éditeur de placement
-- `lib/` : contenu typé, projection OpenAI, adapter Resend, JSON-LD
-- `public/rava-v2/` : 11 visuels source, dérivés webp et crops éditoriaux
-- `legacy-static/` : archive du prototype HTML/CSS/JS précédent
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Three.js for offline metric reference-kit generation only
+- Stripe Checkout
+- OpenAI image integration
 
-## Démarrer
+## Canonical Assets
+
+- `assets/viaire-visuals-source/final/`: complete coherent source photographs for every product and finish
+- `public/viaire/`: optimized storefront images generated from the new masters
+- `modules/projection/core/reference-kits.data.json`: canonical product dimensions and openings
+- `public/projection-kits/`: exact GLB, USDZ and identity-board outputs
+
+The storefront must not read images from any legacy RAVA, MURA or TRAVERSÉE directory.
+
+## Commands
 
 ```bash
-cd /Users/mohyi/CHATGPT/rava-editions-site
 npm install
+npm run assets:storefront
+npm run projection:kits
 npm run dev
 ```
 
-Puis ouvrir `http://127.0.0.1:3000`.
+Validation:
 
-## Variables d’environnement utiles
+```bash
+npm run lint
+npm run typecheck
+npm run projection:verify
+npm run build
+```
 
-- `OPENAI_API_KEY` : active `POST /api/projection`
-- `RESEND_API_KEY` : active `POST /api/estimate`
-- `RESEND_FROM` : expéditeur email optionnel
-- `NEXT_PUBLIC_SITE_URL` : URL canonique optionnelle
+## Environment
 
-Sans `OPENAI_API_KEY` ou `RESEND_API_KEY`, l’UI affiche une erreur explicite et ne simule pas de succès.
+Runtime secrets are loaded from the environment. Required integrations use:
+
+- `OPENAI_API_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `RESEND_API_KEY`
+- `RESEND_FROM`
+- `NEXT_PUBLIC_SITE_URL`
+
+Stripe Tax also requires a real business address. Define:
+
+- `STRIPE_TAX_HEAD_OFFICE_LINE1`
+- `STRIPE_TAX_HEAD_OFFICE_CITY`
+- `STRIPE_TAX_HEAD_OFFICE_POSTAL_CODE`
+- `STRIPE_TAX_HEAD_OFFICE_COUNTRY`
+- `STRIPE_TAX_HEAD_OFFICE_LINE2` (optional)
+- `STRIPE_TAX_HEAD_OFFICE_STATE` (optional)
+- `STRIPE_TAX_CODE_FURNITURE` (optional)
+
+Then configure the active Stripe mode without exposing the address:
+
+```bash
+npm run stripe:tax:configure
+```
+
+Stripe must have Apple Pay, Google Pay, Link, PayPal and Klarna enabled for the
+relevant countries. Stripe only displays methods supported by the current
+browser, currency, country and customer eligibility. Register the final HTTPS
+domain in both Stripe test mode and live mode.
+
+The projection route deliberately fails instead of returning an unverified
+image when the OpenAI account has no image-generation credit or when the
+geometry quality gate rejects the result.
+
+## Markets
+
+The storefront exposes 30 curated delivery markets. Product and delivery
+amounts are recalculated on the server from canonical EUR prices. Delivery is
+tiered from EUR 60 to EUR 90 before local-currency rounding. Stripe Checkout
+collects the delivery address, calculates tax and localizes payment methods.

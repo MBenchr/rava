@@ -1,47 +1,75 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Bodoni_Moda, Manrope } from "next/font/google";
+import { headers } from "next/headers";
 
 import "./globals.css";
 
-import { siteMeta } from "@/lib/rava-content";
+import { CartProvider } from "@/components/cart-provider";
+import { MarketProvider } from "@/components/market-provider";
+import { brandIdentity, getProductById, siteMeta } from "@/lib/rava-content";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.rava-editions.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://viaire.fr";
+const display = Bodoni_Moda({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-display",
+});
+const sans = Manrope({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+const ogImage = getProductById("elan-o1").storefrontHero;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: siteMeta.title,
+  title: {
+    default: siteMeta.title,
+    template: `%s | ${brandIdentity.name}`,
+  },
   description: siteMeta.description,
   keywords: siteMeta.keywords,
+  alternates: {
+    canonical: "/",
+    languages: { "en-GB": "/", "fr-FR": "/fr", "x-default": "/" },
+  },
   openGraph: {
     title: siteMeta.title,
     description: siteMeta.description,
     type: "website",
     url: siteUrl,
-    siteName: siteMeta.name,
-    images: [
-      {
-        url: `${siteUrl}/rava-v2/hero-main.webp`,
-        width: 1672,
-        height: 941,
-        alt: "Cabinet Mura vertical dans un intérieur lumineux.",
-      },
-    ],
+    siteName: brandIdentity.name,
+    locale: "en_GB",
+    alternateLocale: ["fr_FR"],
+    images: [{ url: ogImage.src, alt: ogImage.alt }],
   },
   twitter: {
     card: "summary_large_image",
     title: siteMeta.title,
     description: siteMeta.description,
-    images: [`${siteUrl}/rava-v2/hero-main.webp`],
+    images: [ogImage.src],
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#F3F1EB",
+};
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = (await headers()).get("x-viaire-locale") === "fr" ? "fr-FR" : "en-GB";
+
   return (
-    <html lang="fr" className="scroll-smooth">
-      <body>{children}</body>
+    <html
+      lang={locale}
+      className={`${sans.variable} ${display.variable} scroll-smooth`}
+      data-scroll-behavior="smooth"
+    >
+      <body>
+        <MarketProvider>
+          <CartProvider>{children}</CartProvider>
+        </MarketProvider>
+      </body>
     </html>
   );
 }
