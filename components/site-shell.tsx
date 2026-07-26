@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Menu, ShoppingBag, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   brandIdentity,
   getHomeRoute,
+  getFinishMedia,
   getLocalizedRoute,
   getProductCopy,
   productList,
@@ -23,10 +25,13 @@ type SiteHeaderProps = {
 };
 
 export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
-  const { openCart, totalItems } = useCart();
+  const { items, openCart, totalItems } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const home = getHomeRoute(locale);
   const otherLocaleHref = locale === "en" ? "/fr" : "/";
+  const firstCartImage = items[0]
+    ? getFinishMedia(items[0].productId, items[0].finishId).packshot
+    : null;
 
   function openRoomView() {
     setMenuOpen(false);
@@ -58,7 +63,13 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
           </nav>
 
           <div className="site-header__actions">
-            <Link href={otherLocaleHref} className="site-locale">
+            <Link
+              href={otherLocaleHref}
+              className="site-locale"
+              onClick={() => {
+                document.cookie = `viaire-locale=${locale === "en" ? "fr" : "en"}; Path=/; Max-Age=31536000; SameSite=Lax`;
+              }}
+            >
               {locale === "en" ? "FR" : "EN"}
             </Link>
             <button
@@ -67,8 +78,20 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
               onClick={openCart}
               aria-label={locale === "fr" ? "Ouvrir le panier" : "Open bag"}
             >
-              <ShoppingBag className="size-4" />
-              <span>{locale === "fr" ? "Panier" : "Bag"}</span>
+              {firstCartImage ? (
+                <span className="bag-button__thumb">
+                  <Image
+                    src={firstCartImage.src}
+                    alt=""
+                    fill
+                    sizes="28px"
+                    className="object-cover"
+                  />
+                </span>
+              ) : (
+                <ShoppingBag className="size-4" />
+              )}
+              <span className="bag-button__label">{locale === "fr" ? "Panier" : "Bag"}</span>
               <strong>{totalItems}</strong>
             </button>
             <Button
@@ -107,7 +130,13 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
                 <span>{locale === "fr" ? "Panier" : "Bag"}</span>
                 <span>{totalItems}</span>
               </button>
-              <Link href={otherLocaleHref} onClick={() => setMenuOpen(false)}>
+              <Link
+                href={otherLocaleHref}
+                onClick={() => {
+                  document.cookie = `viaire-locale=${locale === "en" ? "fr" : "en"}; Path=/; Max-Age=31536000; SameSite=Lax`;
+                  setMenuOpen(false);
+                }}
+              >
                 {locale === "en" ? "Français" : "English"}
               </Link>
             </div>

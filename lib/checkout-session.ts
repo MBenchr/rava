@@ -86,7 +86,7 @@ export function buildCheckoutSessionParams(
     line_items: lineItems,
     locale: market.stripeLocale,
     automatic_tax: { enabled: true },
-    billing_address_collection: "required",
+    billing_address_collection: uiMode === "hosted" ? "required" : "auto",
     shipping_address_collection: { allowed_countries: [payload.marketCode] },
     shipping_options: [
       {
@@ -114,8 +114,26 @@ export function buildCheckoutSessionParams(
     ],
     customer_creation: "always",
     customer_email: payload.email,
-    phone_number_collection: { enabled: true },
+    phone_number_collection: { enabled: uiMode === "hosted" },
     tax_id_collection: { enabled: true },
+    invoice_creation: {
+      enabled: true,
+      invoice_data: {
+        description:
+          payload.locale === "fr"
+            ? "Pièce VIAIRE fabriquée sur commande."
+            : "VIAIRE piece made to order.",
+        footer:
+          payload.locale === "fr"
+            ? "Merci d’avoir choisi VIAIRE."
+            : "Thank you for choosing VIAIRE.",
+        metadata: {
+          brand: brandIdentity.name,
+          marketCode: payload.marketCode,
+          locale: payload.locale,
+        },
+      },
+    },
     allow_promotion_codes: false,
     metadata: {
       brand: brandIdentity.name,

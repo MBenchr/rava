@@ -25,7 +25,7 @@ test("storefront selection, cart and projection failure stay usable", async ({ p
 
   await page.getByRole("button", { name: "Add to bag" }).click();
   await expect(page.getByRole("dialog", { name: /The bag/ })).toBeVisible();
-  await page.getByRole("button", { name: "Close" }).last().click();
+  await page.keyboard.press("Escape");
 
   await page.getByRole("button", { name: /View this finish in your room/ }).click();
   await page.locator('input[type="file"]').setInputFiles(roomImage);

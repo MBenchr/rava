@@ -21,9 +21,11 @@ type MarketContextValue = {
   marketCode: MarketCode;
   market: ReturnType<typeof getMarket>;
   setMarketCode: (marketCode: MarketCode) => void;
+  source: "detected" | "manual";
 };
 
 const STORAGE_KEY = "viaire-market-v1";
+const COOKIE_KEY = "viaire-market";
 const MarketContext = createContext<MarketContextValue | null>(null);
 
 function inferBrowserMarket(locale: Locale): MarketCode {
@@ -38,26 +40,43 @@ function inferBrowserMarket(locale: Locale): MarketCode {
 
 export function MarketProvider({
   children,
+  initialMarketCode,
   locale,
-}: PropsWithChildren<{ locale?: Locale }>) {
+}: PropsWithChildren<{ initialMarketCode?: MarketCode; locale?: Locale }>) {
   const activeLocale =
     locale ??
     (typeof window !== "undefined" && window.location.pathname.startsWith("/fr") ? "fr" : "en");
-  const [marketCode, setMarketCode] = useState<MarketCode>(getDefaultMarketCode(activeLocale));
+  const [marketCode, setMarketCodeState] = useState<MarketCode>(
+    initialMarketCode ?? getDefaultMarketCode(activeLocale),
+  );
+  const [source, setSource] = useState<"detected" | "manual">("detected");
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    const next = isMarketCode(saved) ? saved : inferBrowserMarket(activeLocale);
-    window.queueMicrotask(() => setMarketCode(next));
-  }, [activeLocale]);
 
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, marketCode);
-  }, [marketCode]);
+    if (isMarketCode(saved)) {
+      window.queueMicrotask(() => {
+        setMarketCodeState(saved);
+        setSource("manual");
+      });
+      return;
+    }
+
+    if (!initialMarketCode) {
+      window.queueMicrotask(() => setMarketCodeState(inferBrowserMarket(activeLocale)));
+    }
+  }, [activeLocale, initialMarketCode]);
+
+  function setMarketCode(nextMarketCode: MarketCode) {
+    setMarketCodeState(nextMarketCode);
+    setSource("manual");
+    window.localStorage.setItem(STORAGE_KEY, nextMarketCode);
+    document.cookie = `${COOKIE_KEY}=${nextMarketCode}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
 
   const value = useMemo(
-    () => ({ marketCode, market: getMarket(marketCode), setMarketCode }),
-    [marketCode],
+    () => ({ marketCode, market: getMarket(marketCode), setMarketCode, source }),
+    [marketCode, source],
   );
 
   return <MarketContext.Provider value={value}>{children}</MarketContext.Provider>;

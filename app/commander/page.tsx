@@ -21,14 +21,26 @@ export default async function CommanderPage({ searchParams }: Props) {
   let paymentVerified = false;
   let paidCurrency: string | null = null;
   let paidAmountCents: number | null = null;
+  let customerEmail: string | null = null;
+  let orderReference: string | null = null;
+  let orderedItems: Array<{ name: string; quantity: number }> = [];
 
   if ((status === "success" || params.checkout === "return") && params.session_id) {
     try {
-      const session = await getStripeClient().checkout.sessions.retrieve(params.session_id);
+      const session = await getStripeClient().checkout.sessions.retrieve(params.session_id, {
+        expand: ["line_items"],
+      });
       paymentVerified =
         session.payment_status === "paid" || session.payment_status === "no_payment_required";
       paidCurrency = session.currency?.toUpperCase() ?? null;
       paidAmountCents = session.amount_total;
+      customerEmail = session.customer_details?.email ?? null;
+      orderReference = session.id.slice(-12).toUpperCase();
+      orderedItems =
+        session.line_items?.data.map((item) => ({
+          name: item.description ?? "VIAIRE",
+          quantity: item.quantity ?? 1,
+        })) ?? [];
       status = paymentVerified ? "success" : "cancelled";
     } catch {
       paymentVerified = false;
@@ -44,6 +56,9 @@ export default async function CommanderPage({ searchParams }: Props) {
       checkoutSessionId={params.session_id ?? null}
       paidAmountCents={paidAmountCents}
       paidCurrency={paidCurrency}
+      customerEmail={customerEmail}
+      orderReference={orderReference}
+      orderedItems={orderedItems}
     />
   );
 }

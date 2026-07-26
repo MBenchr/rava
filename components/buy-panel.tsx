@@ -1,9 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Eye, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ChevronUp, Eye, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import ExpressCheckout from "@/components/express-checkout";
+import ProductIdentityPicker from "@/components/product-identity-picker";
 import QuantityStepper from "@/components/quantity-stepper";
 import MarketSelector from "@/components/market-selector";
 import { useMarket } from "@/components/market-provider";
@@ -26,7 +29,6 @@ import {
   getProductCopy,
   getSiteCopy,
   normalizeFinishForProduct,
-  productList,
   siteMeta,
   type FinishId,
   type Locale,
@@ -75,6 +77,7 @@ export default function BuyPanel({
   });
   const actionsRef = useRef<HTMLDivElement>(null);
   const [showMobileBuyBar, setShowMobileBuyBar] = useState(true);
+  const [mobileConfiguratorOpen, setMobileConfiguratorOpen] = useState(false);
   const canonicalPriceCents = getFinishPriceCents(productId, activeFinishId) ?? 0;
   const marketPriceCents = getMarketAmountCentsFromEur(
     canonicalPriceCents,
@@ -131,22 +134,12 @@ export default function BuyPanel({
   return (
     <aside className="purchase-panel">
       {showProductSwitch && onProductChange ? (
-        <div
-          className="purchase-panel__products"
-          aria-label={locale === "fr" ? "Choisir une pièce" : "Choose a piece"}
-        >
-          {productList.map((item, index) => (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={item.id === productId}
-              onClick={() => onProductChange(item.id)}
-            >
-              <span>0{index + 1}</span>
-              {getProductCopy(item.id, locale).name}
-            </button>
-          ))}
-        </div>
+        <ProductIdentityPicker
+          productId={productId}
+          finishId={activeFinishId}
+          locale={locale}
+          onChange={onProductChange}
+        />
       ) : (
         <p className="eyebrow">{brandIdentity.collectionLabels[locale]}</p>
       )}
@@ -211,6 +204,20 @@ export default function BuyPanel({
         </Button>
       </div>
 
+      <div className="purchase-panel__express">
+        <p>{locale === "fr" ? "Paiement express" : "Express checkout"}</p>
+        <ExpressCheckout
+          items={[{ productId, finishId: activeFinishId, quantity }]}
+          locale={locale}
+          marketCode={marketCode}
+        />
+        <small>
+          {locale === "fr"
+            ? "Stripe affiche les options les plus rapides disponibles sur cet appareil."
+            : "Stripe shows the fastest options available on this device."}
+        </small>
+      </div>
+
       <button
         type="button"
         className="room-preview-link"
@@ -272,10 +279,71 @@ export default function BuyPanel({
         className={`mobile-buy-bar${showMobileBuyBar ? " mobile-buy-bar--visible" : ""}`}
         aria-hidden={!showMobileBuyBar}
       >
-        <div>
-          <p>{copy.name} · {getFinishLabel(activeFinishId, locale)}</p>
-          <strong>{formattedPrice}</strong>
-        </div>
+        {mobileConfiguratorOpen && onProductChange ? (
+          <div className="mobile-buy-configurator">
+            <div className="mobile-buy-configurator__header">
+              <p>{locale === "fr" ? "Votre pièce" : "Your piece"}</p>
+              <button
+                type="button"
+                onClick={() => setMobileConfiguratorOpen(false)}
+                aria-label={locale === "fr" ? "Fermer" : "Close"}
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <ProductIdentityPicker
+              compact
+              productId={productId}
+              finishId={activeFinishId}
+              locale={locale}
+              onChange={onProductChange}
+            />
+            <div className="mobile-buy-configurator__finishes">
+              {getAvailableFinishes(productId).map((finish) => (
+                <button
+                  key={finish.id}
+                  type="button"
+                  aria-pressed={finish.id === activeFinishId}
+                  aria-label={finish.labels[locale]}
+                  onClick={() => onFinishChange(finish.id)}
+                >
+                  <span style={{ backgroundColor: finish.hex }} />
+                  {finish.labels[locale]}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                onAddToCart();
+                setMobileConfiguratorOpen(false);
+              }}
+            >
+              {locale === "fr" ? "Ajouter au panier" : "Add to bag"}
+            </Button>
+          </div>
+        ) : null}
+        <button
+          type="button"
+          className="mobile-buy-bar__selection"
+          onClick={() => setMobileConfiguratorOpen((current) => !current)}
+          aria-expanded={mobileConfiguratorOpen}
+        >
+          <span className="mobile-buy-bar__image">
+            <Image
+              src={product.finishes[activeFinishId].packshot.src}
+              alt=""
+              fill
+              sizes="48px"
+              className="object-cover"
+            />
+          </span>
+          <span>
+            <p>{copy.name} · {getFinishLabel(activeFinishId, locale)}</p>
+            <strong>{formattedPrice}</strong>
+          </span>
+          <ChevronUp className="size-4" aria-hidden="true" />
+        </button>
         <Button onClick={buyNow} disabled={buyState.loading}>
           {locale === "fr" ? "Acheter" : "Buy now"}
         </Button>

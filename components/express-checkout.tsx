@@ -24,7 +24,28 @@ type SessionData = {
   sessionId: string;
 };
 
-function ExpressButtons({ locale }: { locale: Locale }) {
+const klarnaFirstMarkets = new Set<MarketCode>(["AT", "DE", "DK", "FI", "NO", "SE"]);
+const paypalFirstMarkets = new Set<MarketCode>(["BE", "CA", "DE", "ES", "FR", "GB", "IT", "LU", "NL", "PT", "US"]);
+
+function paymentMethodOrder(marketCode: MarketCode) {
+  if (klarnaFirstMarkets.has(marketCode)) {
+    return ["klarna", "paypal", "apple_pay", "google_pay", "amazon_pay", "link"];
+  }
+
+  if (paypalFirstMarkets.has(marketCode)) {
+    return ["paypal", "apple_pay", "google_pay", "klarna", "amazon_pay", "link"];
+  }
+
+  return ["apple_pay", "google_pay", "paypal", "klarna", "amazon_pay", "link"];
+}
+
+function ExpressButtons({
+  locale,
+  marketCode,
+}: {
+  locale: Locale;
+  marketCode: MarketCode;
+}) {
   const checkoutState = useCheckoutElements();
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -48,9 +69,16 @@ function ExpressButtons({ locale }: { locale: Locale }) {
             paypal: "buynow",
           },
           buttonTheme: undefined,
-          layout: { maxColumns: 2, maxRows: 2, overflow: "never" },
-          paymentMethodOrder: undefined,
-          paymentMethods: undefined,
+          layout: { maxColumns: 2, maxRows: 2, overflow: "auto" },
+          paymentMethodOrder: paymentMethodOrder(marketCode),
+          paymentMethods: {
+            applePay: "auto",
+            googlePay: "auto",
+            paypal: "auto",
+            klarna: "auto",
+            amazonPay: "auto",
+            link: "auto",
+          },
         }}
         onReady={() => setReady(true)}
         onConfirm={async (event) => {
@@ -160,7 +188,7 @@ function ExpressCheckoutSession({
         },
       }}
     >
-      <ExpressButtons locale={locale} />
+      <ExpressButtons locale={locale} marketCode={marketCode} />
     </CheckoutElementsProvider>
   );
 }

@@ -36,6 +36,9 @@ type CartPageProps = {
   checkoutSessionId?: string | null;
   paidAmountCents?: number | null;
   paidCurrency?: string | null;
+  customerEmail?: string | null;
+  orderReference?: string | null;
+  orderedItems?: Array<{ name: string; quantity: number }>;
 };
 
 export default function CartPage({
@@ -45,6 +48,9 @@ export default function CartPage({
   checkoutSessionId = null,
   paidAmountCents = null,
   paidCurrency = null,
+  customerEmail = null,
+  orderReference = null,
+  orderedItems = [],
 }: CartPageProps) {
   const { clearCart, items, removeItem, setQuantity, subtotalCents, totalItems } = useCart();
   const { market, marketCode } = useMarket();
@@ -78,7 +84,64 @@ export default function CartPage({
       <SiteHeader locale={locale} />
       <section className="page-shell section-space min-h-[70svh]">
         {checkoutStatus === "success" && paymentVerified ? (
-          <div className="mx-auto max-w-2xl text-center"><p className="eyebrow">{locale === "fr" ? "Paiement confirmé" : "Payment confirmed"}</p><h1 className="display-title mt-4 text-6xl">{locale === "fr" ? "Merci pour votre commande." : "Thank you for your order."}</h1><p className="mt-6 text-muted-foreground">{locale === "fr" ? "Une confirmation vous sera envoyée par email." : "A confirmation will be sent by email."}</p><Link href={getHomeRoute(locale)} className="mt-8 inline-flex h-12 items-center rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground">{locale === "fr" ? "Retour à la collection" : "Back to the collection"}</Link></div>
+          <div className="mx-auto max-w-3xl">
+            <div className="text-center">
+              <p className="eyebrow">{locale === "fr" ? "Paiement confirmé" : "Payment confirmed"}</p>
+              <h1 className="display-title mt-4 text-6xl">
+                {locale === "fr" ? "Votre pièce entre en mouvement." : "Your piece is now in motion."}
+              </h1>
+              <p className="mx-auto mt-6 max-w-xl text-muted-foreground">
+                {locale === "fr"
+                  ? "Nous vérifions chaque détail avant de lancer la fabrication sur commande."
+                  : "We are reviewing every detail before made-to-order production begins."}
+              </p>
+            </div>
+            <div className="surface mt-10 p-6 sm:p-8">
+              <dl>
+                <div className="buy-row">
+                  <dt>{locale === "fr" ? "Référence" : "Reference"}</dt>
+                  <dd>{orderReference ?? "—"}</dd>
+                </div>
+                <div className="buy-row">
+                  <dt>{locale === "fr" ? "Total réglé" : "Paid total"}</dt>
+                  <dd>
+                    {paidAmountCents && paidCurrency
+                      ? new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-GB", {
+                          style: "currency",
+                          currency: paidCurrency,
+                        }).format(paidAmountCents / 100)
+                      : "—"}
+                  </dd>
+                </div>
+                {customerEmail ? (
+                  <div className="buy-row">
+                    <dt>{locale === "fr" ? "Suivi envoyé à" : "Updates sent to"}</dt>
+                    <dd>{customerEmail}</dd>
+                  </div>
+                ) : null}
+              </dl>
+              {orderedItems.length ? (
+                <div className="mt-6 border-t border-border pt-5">
+                  {orderedItems.map((item) => (
+                    <p key={`${item.name}-${item.quantity}`} className="flex justify-between gap-5 py-2 text-sm">
+                      <span>{item.name}</span>
+                      <span>× {item.quantity}</span>
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+              <ol className="mt-6 grid gap-3 border-t border-border pt-6 text-sm text-muted-foreground sm:grid-cols-3">
+                <li>1. {locale === "fr" ? "Validation par le studio" : "Studio review"}</li>
+                <li>2. {locale === "fr" ? "Fabrication · env. 20 jours ouvrés" : "Production · around 20 working days"}</li>
+                <li>3. {locale === "fr" ? "Livraison et suivi" : "Delivery and tracking"}</li>
+              </ol>
+            </div>
+            <div className="mt-8 text-center">
+              <Link href={getHomeRoute(locale)} className="inline-flex h-12 items-center rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground">
+                {locale === "fr" ? "Retour à la collection" : "Back to the collection"}
+              </Link>
+            </div>
+          </div>
         ) : (
           <div className="grid gap-12 lg:grid-cols-[1.3fr_0.7fr]">
             <div><p className="eyebrow">{locale === "fr" ? "Panier" : "Bag"}</p><h1 className="display-title mt-4 text-6xl">{checkoutStatus === "cancelled" ? (locale === "fr" ? "Votre panier vous attend." : "Your bag is still here.") : (locale === "fr" ? "Votre sélection." : "Your selection.")}</h1>

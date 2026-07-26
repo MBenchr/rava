@@ -31,6 +31,12 @@ type CartContextValue = {
   isCartOpen: boolean;
   addItem: (item: Omit<CartLine, "finishId"> & { finishId: FinishId }, replace?: boolean) => void;
   removeItem: (productId: ProductId, finishId: FinishId) => void;
+  replaceItem: (
+    productId: ProductId,
+    finishId: FinishId,
+    nextProductId: ProductId,
+    nextFinishId: FinishId,
+  ) => void;
   setQuantity: (productId: ProductId, finishId: FinishId, quantity: number) => void;
   clearCart: () => void;
   openCart: () => void;
@@ -151,6 +157,44 @@ export function CartProvider({ children }: PropsWithChildren) {
         setItems((current) =>
           current.filter((item) => makeLineKey(item.productId, item.finishId) !== makeLineKey(productId, finishId)),
         );
+      },
+      replaceItem(productId, finishId, nextProductId, nextFinishId) {
+        setItems((current) => {
+          const currentKey = makeLineKey(productId, finishId);
+          const normalizedNextFinish = normalizeFinishForProduct(nextProductId, nextFinishId);
+          const nextKey = makeLineKey(nextProductId, normalizedNextFinish);
+          const source = current.find((item) => makeLineKey(item.productId, item.finishId) === currentKey);
+
+          if (!source || currentKey === nextKey) {
+            return current;
+          }
+
+          const remaining = current.filter(
+            (item) => makeLineKey(item.productId, item.finishId) !== currentKey,
+          );
+          const existing = remaining.find(
+            (item) => makeLineKey(item.productId, item.finishId) === nextKey,
+          );
+
+          if (existing) {
+            return sanitizeItems(
+              remaining.map((item) =>
+                makeLineKey(item.productId, item.finishId) === nextKey
+                  ? { ...item, quantity: item.quantity + source.quantity }
+                  : item,
+              ),
+            );
+          }
+
+          return sanitizeItems([
+            ...remaining,
+            {
+              productId: nextProductId,
+              finishId: normalizedNextFinish,
+              quantity: source.quantity,
+            },
+          ]);
+        });
       },
       setQuantity(productId, finishId, quantity) {
         setItems((current) =>

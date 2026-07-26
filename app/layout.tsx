@@ -6,6 +6,7 @@ import "./globals.css";
 
 import { CartProvider } from "@/components/cart-provider";
 import { MarketProvider } from "@/components/market-provider";
+import { detectMarketFromHeaders } from "@/lib/market-detection";
 import { brandIdentity, getProductById, siteMeta } from "@/lib/rava-content";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://viaire.fr";
@@ -57,16 +58,19 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const locale = (await headers()).get("x-viaire-locale") === "fr" ? "fr-FR" : "en-GB";
+  const requestHeaders = await headers();
+  const activeLocale = requestHeaders.get("x-viaire-locale") === "fr" ? "fr" : "en";
+  const htmlLocale = activeLocale === "fr" ? "fr-FR" : "en-GB";
+  const initialMarketCode = detectMarketFromHeaders(requestHeaders, activeLocale);
 
   return (
     <html
-      lang={locale}
+      lang={htmlLocale}
       className={`${sans.variable} ${display.variable} scroll-smooth`}
       data-scroll-behavior="smooth"
     >
       <body>
-        <MarketProvider>
+        <MarketProvider locale={activeLocale} initialMarketCode={initialMarketCode}>
           <CartProvider>{children}</CartProvider>
         </MarketProvider>
       </body>

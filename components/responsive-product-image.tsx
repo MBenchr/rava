@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 import type { MediaAsset } from "@/lib/rava-content";
 
 type ResponsiveProductImageProps = {
@@ -18,15 +16,15 @@ export default function ResponsiveProductImage({
   return (
     <picture className="absolute inset-0 block">
       <source media="(max-width: 639px)" srcSet={media.mobileSrc} />
-      <Image
+      {/* Optimized WebP derivatives are generated ahead of time for both breakpoints. */}
+      <img
         src={media.src}
         alt={media.alt}
-        fill
-        preload={priority}
         loading={priority ? "eager" : "lazy"}
-        fetchPriority={priority ? "high" : undefined}
+        fetchPriority={priority ? "high" : "auto"}
+        decoding={priority ? "sync" : "async"}
         sizes={sizes}
-        className={className}
+        className={`absolute inset-0 h-full w-full ${className ?? ""}`}
       />
     </picture>
   );
