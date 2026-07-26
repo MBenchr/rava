@@ -29,7 +29,17 @@ for (const code of marketCodes) {
     0,
     `${code}: localized catalog prices must follow their rounding step.`,
   );
+  assert.equal(
+    samplePrice,
+    market.catalogAnchorMajor * 100,
+    `${code}: EUR 3,000 must map to the fixed commercial catalog anchor.`,
+  );
   assert.ok(market.labels.en && market.labels.fr, `${code}: both storefront labels are required.`);
 }
+
+assert.equal(getMarketAmountCentsFromEur(300_000, "CH"), 300_000);
+assert.equal(getMarketAmountCentsFromEur(320_000, "CH"), 320_000);
+assert.equal(getMarketAmountCentsFromEur(330_000, "CH"), 330_000);
+assert.equal(getMarketAmountCentsFromEur(350_000, "CH"), 350_000);
 
 console.log(`Verified ${marketCodes.length} markets, localized prices and shipping tiers.`);

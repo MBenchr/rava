@@ -15,6 +15,8 @@ test("storefront selection, cart and projection failure stay usable", async ({ p
   await page.goto("/");
 
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Let life through");
+  await page.getByLabel("Delivery country").selectOption("CH");
+  await expect(page.getByText("CHF 3,000", { exact: true }).first()).toBeVisible();
   await page.getByLabel("Delivery country").selectOption("US");
   await expect(page.getByText("$3,300", { exact: true }).first()).toBeVisible();
 

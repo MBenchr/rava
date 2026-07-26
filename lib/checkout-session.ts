@@ -72,6 +72,8 @@ export function buildCheckoutSessionParams(
             productId: item.productId,
             finishId: item.finishId,
             canonicalEuroUnitAmount: String(canonicalEuroAmount),
+            localCatalogUnitAmount: String(localAmount),
+            catalogPricingPolicy: "fixed-market-anchor-v1",
             marketCode: payload.marketCode,
           },
         },
@@ -120,7 +122,8 @@ export function buildCheckoutSessionParams(
       orderKind: "catalog",
       locale: payload.locale,
       marketCode: payload.marketCode,
-      catalogVersion: "viaire-international-v2",
+      catalogVersion: "viaire-international-v3",
+      catalogPricingPolicy: "fixed-market-anchor-v1",
       taxEngine: "stripe-tax",
     },
     ...(paymentMethodConfiguration

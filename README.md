@@ -78,7 +78,9 @@ geometry quality gate rejects the result.
 
 ## Markets
 
-The storefront exposes 30 curated delivery markets. Product and delivery
-amounts are recalculated on the server from canonical EUR prices. Delivery is
-tiered from EUR 60 to EUR 90 before local-currency rounding. Stripe Checkout
-collects the delivery address, calculates tax and localizes payment methods.
+The storefront exposes 30 curated delivery markets. Product prices use fixed,
+rounded commercial anchors per market, derived from the canonical EUR catalog
+but protected from exchange-rate drift. For example, the EUR 3,000 base piece
+is CHF 3,000 in Switzerland. Delivery remains tiered from EUR 60 to EUR 90
+before local-currency rounding. Stripe Checkout collects the delivery address,
+calculates tax and localizes payment methods.
