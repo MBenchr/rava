@@ -107,6 +107,14 @@ async function processJob(id: string, input: GenerateProjectionInput) {
     const job = registry.jobs.get(id);
     if (!job) return;
     job.artifact = artifact;
+    job.transform = {
+      ...job.transform,
+      box: artifact.placementBox,
+      floorAnchor: {
+        x: artifact.placementBox.x + artifact.placementBox.width / 2,
+        y: artifact.placementBox.y + artifact.placementBox.height,
+      },
+    };
     updateJob(id, "completed", 100, "Projection ready");
   } catch (error) {
     const job = registry.jobs.get(id);

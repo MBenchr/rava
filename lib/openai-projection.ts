@@ -27,7 +27,7 @@ import { evaluateProjectionQuality, ProjectionQualityError } from "@/modules/pro
 
 const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 const MAX_EDGE = 1600;
-const PROMPT_VERSION = "reference-guided-full-photo-v2";
+const PROMPT_VERSION = "reference-guided-full-photo-v3";
 
 export type ProjectionProgressStage = "analysing" | "rendering" | "integrating" | "verifying";
 
@@ -48,7 +48,7 @@ type NormalizedImage = {
   warning?: string;
 };
 
-type ApiImageSize = "1024x1024" | "1536x1024" | "1024x1536";
+type ApiImageSize = `${number}x${number}`;
 
 type PreparedEditCanvas = PixelSize & {
   buffer: Buffer;
@@ -61,6 +61,11 @@ type SceneScaleEvaluation = {
   suggestedHeight: number;
   horizonY: number;
   reason: string;
+  cameraView: string;
+  lightDirection: string;
+  lightQuality: string;
+  decorStyle: string;
+  stylingObjects: string[];
 };
 
 type VisualProjectionEvaluation = {
@@ -70,7 +75,11 @@ type VisualProjectionEvaluation = {
   realismScore: number;
   roomPreservationScore: number;
   openingCountMatches: boolean;
+  openingLayoutMatches: boolean;
   silhouetteMatches: boolean;
+  railThicknessMatches: boolean;
+  frontAspectMatches: boolean;
+  finishMatches: boolean;
   reasons: string[];
 };
 
@@ -135,10 +144,11 @@ async function analyseSceneScale(
         content: [
           {
             type: "input_text",
-            text: `Analyse this interior photograph for physically credible furniture scale.
+            text: `Analyse this interior photograph for physically credible furniture placement and photographic integration.
 The customer selected floor anchor x=${floorAnchor.x.toFixed(4)}, y=${floorAnchor.y.toFixed(4)} in normalized full-image coordinates.
 The exact product is ${product.localized.en.name}, ${kit.dimensionsMm.width} mm wide × ${kit.dimensionsMm.height} mm high × ${kit.dimensionsMm.depth} mm deep.
-Infer the horizon, floor plane and scale from architecture, doors, windows, furniture and perspective. Return the normalized image height that this product should occupy when its base touches the selected anchor. Never move the selected floor anchor. Do not infer a different product aspect ratio.`,
+Infer the horizon, floor plane and scale from architecture, doors, windows, furniture and perspective. Return the normalized image height that this product should occupy when its base touches the selected anchor. Never move the selected floor anchor. Do not infer a different product aspect ratio.
+Also identify the camera view, the direction and quality of light, the interior style, and up to four restrained objects that could naturally sit in this product without obscuring its openings. Suggested objects must suit the room already photographed and look collected rather than staged.`,
           },
           {
             type: "input_image",
@@ -161,8 +171,27 @@ Infer the horizon, floor plane and scale from architecture, doors, windows, furn
             suggestedHeight: { type: "number", minimum: 0.1, maximum: 0.9 },
             horizonY: { type: "number", minimum: 0, maximum: 1 },
             reason: { type: "string" },
+            cameraView: { type: "string" },
+            lightDirection: { type: "string" },
+            lightQuality: { type: "string" },
+            decorStyle: { type: "string" },
+            stylingObjects: {
+              type: "array",
+              maxItems: 4,
+              items: { type: "string" },
+            },
           },
-          required: ["confidence", "suggestedHeight", "horizonY", "reason"],
+          required: [
+            "confidence",
+            "suggestedHeight",
+            "horizonY",
+            "reason",
+            "cameraView",
+            "lightDirection",
+            "lightQuality",
+            "decorStyle",
+            "stylingObjects",
+          ],
         },
       },
     },
@@ -185,7 +214,7 @@ async function evaluateGeneratedProjection(
   generated: Buffer,
   original: Buffer,
   officialProductReference: Buffer,
-  frontOrthographic: Buffer,
+  identityBoard: Buffer,
   productId: ProductId,
   requestedBox: PlacementBox,
 ) {
@@ -206,11 +235,11 @@ async function evaluateGeneratedProjection(
 IMAGE 1 is the generated full-room result.
 IMAGE 2 is the original room.
 IMAGE 3 is the immutable approved product photograph.
-IMAGE 4 is the immutable front orthographic identity reference.
+IMAGE 4 is the approved identity board showing front, right and rear geometry.
 
 The expected product has exactly ${kit.openings.length} openings and external dimensions ${kit.dimensionsMm.width} × ${kit.dimensionsMm.height} × ${kit.dimensionsMm.depth} mm. The requested normalized product box is x=${requestedBox.x.toFixed(4)}, y=${requestedBox.y.toFixed(4)}, width=${requestedBox.width.toFixed(4)}, height=${requestedBox.height.toFixed(4)}.
 
-Reject geometry drift, wrong opening count or layout, changed arch/base/depth, wrong overall proportions, floating floor contact, visible collage edges, CGI material, incorrect lighting, or unnecessary changes to the room. Return a tight normalized bounding box around the generated product in IMAGE 1 and conservative 0–1 scores. Scores above 0.9 require strong visual evidence.`,
+Reject geometry drift, wrong opening count or layout, changed arch/base/depth, thinner rails, wrong width-to-height ratio, wrong finish, floating floor contact, visible collage edges, CGI material, incorrect lighting, or unnecessary changes to the room. Return a tight normalized bounding box around the generated product in IMAGE 1 and conservative 0–1 scores. Scores above 0.9 require strong visual evidence.`,
           },
           { type: "input_image", image_url: dataUrl(generated, "image/png"), detail: "high" },
           { type: "input_image", image_url: dataUrl(original, "image/png"), detail: "high" },
@@ -221,7 +250,7 @@ Reject geometry drift, wrong opening count or layout, changed arch/base/depth, w
           },
           {
             type: "input_image",
-            image_url: dataUrl(frontOrthographic, "image/png"),
+            image_url: dataUrl(identityBoard, "image/png"),
             detail: "high",
           },
         ],
@@ -252,7 +281,11 @@ Reject geometry drift, wrong opening count or layout, changed arch/base/depth, w
             realismScore: { type: "number", minimum: 0, maximum: 1 },
             roomPreservationScore: { type: "number", minimum: 0, maximum: 1 },
             openingCountMatches: { type: "boolean" },
+            openingLayoutMatches: { type: "boolean" },
             silhouetteMatches: { type: "boolean" },
+            railThicknessMatches: { type: "boolean" },
+            frontAspectMatches: { type: "boolean" },
+            finishMatches: { type: "boolean" },
             reasons: { type: "array", items: { type: "string" } },
           },
           required: [
@@ -262,7 +295,11 @@ Reject geometry drift, wrong opening count or layout, changed arch/base/depth, w
             "realismScore",
             "roomPreservationScore",
             "openingCountMatches",
+            "openingLayoutMatches",
             "silhouetteMatches",
+            "railThicknessMatches",
+            "frontAspectMatches",
+            "finishMatches",
             "reasons",
           ],
         },
@@ -330,19 +367,36 @@ async function normalizeImage(file: File): Promise<NormalizedImage> {
   };
 }
 
-function chooseApiCanvas(source: PixelSize): PixelSize & { apiSize: ApiImageSize } {
-  const sourceAspect = source.width / source.height;
-  const options = [
-    { width: 1024, height: 1024, apiSize: "1024x1024" as const },
-    { width: 1536, height: 1024, apiSize: "1536x1024" as const },
-    { width: 1024, height: 1536, apiSize: "1024x1536" as const },
-  ];
+function roundToImageGrid(value: number) {
+  return Math.max(16, Math.round(value / 16) * 16);
+}
 
-  return options.reduce((best, option) => {
-    const bestDelta = Math.abs(Math.log(sourceAspect / (best.width / best.height)));
-    const optionDelta = Math.abs(Math.log(sourceAspect / (option.width / option.height)));
-    return optionDelta < bestDelta ? option : best;
-  });
+export function chooseApiCanvas(source: PixelSize): PixelSize & { apiSize: ApiImageSize } {
+  const sourceAspect = source.width / source.height;
+  const aspect = clamp(sourceAspect, 1 / 3, 3);
+  const targetPixels = 1536 * 1024;
+  const minimumPixels = 655_360;
+  const maximumEdge = 1536;
+  let width = Math.sqrt(targetPixels * aspect);
+  let height = width / aspect;
+  const edgeScale = Math.min(1, maximumEdge / Math.max(width, height));
+  width *= edgeScale;
+  height *= edgeScale;
+
+  if (width * height < minimumPixels) {
+    const minimumScale = Math.sqrt(minimumPixels / (width * height));
+    width *= minimumScale;
+    height *= minimumScale;
+  }
+
+  const outputWidth = Math.min(maximumEdge, roundToImageGrid(width));
+  const outputHeight = Math.min(maximumEdge, roundToImageGrid(height));
+
+  return {
+    width: outputWidth,
+    height: outputHeight,
+    apiSize: `${outputWidth}x${outputHeight}`,
+  };
 }
 
 async function prepareEditCanvas(image: NormalizedImage): Promise<PreparedEditCanvas> {
@@ -505,6 +559,7 @@ function buildPrompt(input: {
   finishId: FinishId;
   placementMode: PlacementMode;
   transform: PlacementTransform;
+  scene: SceneScaleEvaluation | null;
   message: string;
 }) {
   const kit = getApprovedProductReferenceKit(input.productId);
@@ -512,32 +567,48 @@ function buildPrompt(input: {
   const finish = getFinishById(input.finishId);
   const box = input.transform.box;
   const note = input.message.trim().slice(0, 320);
+  const scene = input.scene;
+  const stylingObjects = scene?.stylingObjects
+    .map((object) => object.trim())
+    .filter(Boolean)
+    .slice(0, 4);
 
-  return `TASK — Regenerate one complete, coherent, photorealistic interior photograph with the approved product naturally present in the selected location. The result must look like one camera exposure, never a cutout, overlay, pasted render or collage.
+  return `GOAL
+Regenerate one complete, coherent, photorealistic interior photograph with the approved product naturally present in the selected location. This is a premium furniture room-view result intended to help a customer decide to purchase. It must look like one real camera exposure, never a cutout, overlay, pasted render, 3D mockup or collage.
 
-IMAGE 1 — Original room and primary composition. Preserve its camera, crop, architecture, furniture, objects and visual identity.
-IMAGE 2 — Official ${product.localized.en.name} photograph in ${finish.labels.en}. This is the immutable product identity and finish reference. Copy the exact silhouette, proportions, opening count, opening layout, junction thickness, rounded edges, recessed base and material response.
-IMAGE 3 — Approved front orthographic geometry reference. It proves the exact front proportions and opening coordinates.
-IMAGE 4 — Approved 30-degree geometry reference. It proves the exact depth and side proportions.
+INPUTS
+IMAGE 1 — Original customer room and primary composition. Preserve its camera, crop, architecture, furniture, objects and visual identity.
+IMAGE 2 — Official ${product.localized.en.name} campaign photograph in ${finish.labels.en}. This is the immutable product identity, finish and photographic realism reference.
+IMAGE 3 — Approved product identity board. It proves the exact front, right and rear geometry.
+IMAGE 4 — Approved front orthographic reference. It proves the exact front proportions and opening coordinates.
+IMAGE 5 — Approved rear three-quarter reference. It proves the exact ${kit.dimensionsMm.depth} mm depth and open-backed construction.
 
-IMMUTABLE PRODUCT
+PRODUCT — IMMUTABLE
 ${product.localized.en.name}, reference kit ${kit.version}.
 External dimensions: ${kit.dimensionsMm.width} mm wide × ${kit.dimensionsMm.height} mm high × ${kit.dimensionsMm.depth} mm deep.
 Exactly ${kit.openings.length} openings in the coordinates shown on Image 3. Open-backed. Continuous solid base. No feet.
 The visible rails, uprights and junctions must keep the same ${kit.wallThicknessMm} mm material density as the approved reference. Do not make the horizontal model thinner or lighter.
 
-PLACEMENT
+PLACEMENT — IMMUTABLE
 Normalized box: x ${box.x.toFixed(4)}, y ${box.y.toFixed(4)}, width ${box.width.toFixed(4)}, height ${box.height.toFixed(4)}.
 Yaw: ${input.transform.yawDeg.toFixed(0)} degrees. Floor anchor: ${input.transform.floorAnchor.x.toFixed(4)}, ${input.transform.floorAnchor.y.toFixed(4)}.
 Scale was inferred automatically from the room perspective, known architectural cues and the canonical metric dimensions. The customer selected only the floor anchor.
 ${placementInstruction(input.placementMode)}
-The product must fill the supplied box, with its base touching the supplied floor anchor. The floor contact and the selected anchor are immutable. Infer room perspective from Image 1, but do not alter the approved front width-to-height ratio. Respect believable occlusion by existing foreground objects.
+The product must fill the supplied box, with its base touching the supplied floor anchor. The floor contact, centre, width-to-height ratio and selected anchor are immutable. Infer room perspective from Image 1 without changing the approved front proportions. Respect believable occlusion by existing foreground objects.
 
-ALLOWED CHANGES
-Inside the supplied edit mask, rebuild the local room pixels and the product together as one photograph. Match lens perspective, exposure, light direction, colour temperature, contact shadow, indirect bounce light, edge softness, depth of field and photographic grain. The surface is a premium hand-applied mineral plaster: silky matte, approximately 5–8 gloss units, smooth at normal viewing distance, with only faint tonal clouding and microscopic trowel variation visible in grazing light.
+SCENE MATCH
+${scene ? `Camera: ${scene.cameraView}. Light direction: ${scene.lightDirection}. Light quality: ${scene.lightQuality}. Interior character: ${scene.decorStyle}.` : "Read camera perspective, light direction, colour temperature and interior character only from Image 1."}
+Do not redesign or restyle the customer's room. You may rebalance exposure and colour only inside the edit mask so product and room read as one photograph.
 
-FORBIDDEN
-Never invent, remove, merge, close or reshape an opening. Never change the arch, base, depth, rail thickness or proportions. Never make the product plastic, lacquered, glossy, sandy, embossed, grainy or CGI-looking. Never crop or redesign the room. Never copy decorative objects from the reference photograph into the user's room. No text, logo or watermark.${note ? `\n\nUSER NOTE — ${note}` : ""}`;
+PHOTOGRAPHIC INTEGRATION
+Inside the supplied edit mask, rebuild the local room pixels and the product together. Match lens perspective, exposure, light direction, colour temperature, contact shadow, indirect bounce light, edge softness, depth of field, sensor noise and photographic grain. The product surface is premium hand-applied mineral plaster: refined matte, approximately 5–8 gloss units, smooth at normal viewing distance, with faint tonal clouding and microscopic trowel variation visible only in grazing light. It must never look plastic, flat-shaded or computer-generated.
+
+LIVED-IN STYLING
+Use zero to four physically plausible objects inside the openings only when they improve realism. Prefer an edited mix of books, hand-thrown stoneware, a small framed photograph, a restrained vessel or one sculptural found object. Match the customer's existing taste and scale. Keep generous empty space, do not repeat identical objects and never hide an opening.${stylingObjects?.length ? ` Suitable cues from the room analysis: ${stylingObjects.join(", ")}.` : ""}
+
+CONSTRAINTS
+Change only the masked integration area. Keep everything else the same.
+Never invent, remove, merge, close or reshape an opening. Never change the arch, base, depth, rail thickness or proportions. Never make the product plastic, lacquered, glossy, sandy, embossed, grainy or CGI-looking. Never crop or redesign the room. Never copy the room or decorative arrangement from an input reference. No text, logo or watermark.${note ? `\n\nOPTIONAL CUSTOMER NOTE\n${note}` : ""}`;
 }
 
 async function absolutePublicFile(publicPath: string) {
@@ -599,28 +670,34 @@ export async function generateProjection(input: GenerateProjectionInput): Promis
     finishId: input.finishId,
     placementMode: input.placementMode,
     transform,
+    scene: scaleAnalysis,
     message: input.message,
   });
   const officialProductReference = await absolutePublicFile(
     getProductById(input.productId).finishes[input.finishId].packshot.src,
   );
   const frontOrthographic = await absolutePublicFile(kit.assets.frontOrthographic);
-  const frontRight30 = await absolutePublicFile(kit.assets.frontRight30);
+  const rearLeft30 = await absolutePublicFile(kit.assets.rearLeft30);
+  const identityBoard = await absolutePublicFile(kit.assets.identityBoard);
   const baseline = await restoreOriginalPhotoFrame(canvas.buffer, canvas, original);
+  const imageModel = getServerEnv("OPENAI_IMAGE_MODEL") ?? "gpt-image-2";
 
   async function runAttempt(prompt: string) {
     input.onProgress?.("integrating");
     const response = await client.images.edit({
-      model: "gpt-image-2",
+      model: imageModel,
       image: [
         await toFile(canvas.buffer, "01-original-room.png", { type: "image/png" }),
         await toFile(officialProductReference, "02-official-product-reference.webp", {
           type: "image/webp",
         }),
-        await toFile(frontOrthographic, "03-approved-front-orthographic.png", {
+        await toFile(identityBoard, "03-approved-identity-board.png", {
           type: "image/png",
         }),
-        await toFile(frontRight30, "04-approved-front-right-30.png", {
+        await toFile(frontOrthographic, "04-approved-front-orthographic.png", {
+          type: "image/png",
+        }),
+        await toFile(rearLeft30, "05-approved-rear-left-30.png", {
           type: "image/png",
         }),
       ],
@@ -646,7 +723,7 @@ export async function generateProjection(input: GenerateProjectionInput): Promis
       restored,
       original.buffer,
       officialProductReference,
-      frontOrthographic,
+      identityBoard,
       input.productId,
       sourceBox,
     );
@@ -659,7 +736,13 @@ export async function generateProjection(input: GenerateProjectionInput): Promis
     const scores = evaluateProjectionQuality({
       requestedBox: sourceBox,
       renderedBox: visual.productBox,
-      geometryLocked: visual.openingCountMatches && visual.silhouetteMatches,
+      geometryLocked:
+        visual.openingCountMatches &&
+        visual.openingLayoutMatches &&
+        visual.silhouetteMatches &&
+        visual.railThicknessMatches &&
+        visual.frontAspectMatches &&
+        visual.finishMatches,
       geometrySimilarity: visual.geometrySimilarity,
       placementConfidence: visual.placementConfidence,
       realismScore: visual.realismScore,
@@ -703,9 +786,11 @@ Regenerate from the original room and immutable references. Correct every listed
     requestId: randomUUID(),
     warning: warningParts.length ? warningParts.join(" ") : undefined,
     productId: input.productId,
+    finishId: input.finishId,
+    placementBox: sourceBox,
     referenceKitVersion: kit.version,
     promptVersion: PROMPT_VERSION,
-    rendererVersion: "reference-guided-full-photo-v2",
+    rendererVersion: "reference-guided-full-photo-v3",
     scores: attempt.scores,
   };
 }

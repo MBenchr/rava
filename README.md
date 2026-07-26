@@ -36,6 +36,10 @@ Validation:
 npm run lint
 npm run typecheck
 npm run projection:verify
+npm run projection:contract:verify
+npm run projection:errors:verify
+npm run projection:openai:verify
+npm run test:e2e
 npm run build
 ```
 
@@ -44,6 +48,8 @@ npm run build
 Runtime secrets are loaded from the environment. Required integrations use:
 
 - `OPENAI_API_KEY`
+- `OPENAI_IMAGE_MODEL` (optional, defaults to `gpt-image-2`)
+- `OPENAI_VISION_MODEL` (optional, defaults to `gpt-5-mini`)
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_WEBHOOK_SECRET`
@@ -75,6 +81,11 @@ domain in both Stripe test mode and live mode.
 The projection route deliberately fails instead of returning an unverified
 image when the OpenAI account has no image-generation credit or when the
 geometry quality gate rejects the result.
+
+`npm run projection:openai:verify` checks model access without printing the API
+key. A `PROJECTION_BILLING` result means the key is recognized but the OpenAI
+project needs active billing or available credits before live room views can
+be generated.
 
 ## Markets
 

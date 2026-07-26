@@ -2,12 +2,15 @@
 "use client";
 
 import { type ChangeEvent, type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import { Download, RefreshCw, Share2, ShoppingBag, SlidersHorizontal } from "lucide-react";
 
 import PlacementEditor from "@/components/placement-editor";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { trackCommerceEvent } from "@/lib/commerce-events";
 import {
   finishes,
   getFinishLabel,
+  getFinishPrice,
   getPlacementModesForProduct,
   getProductById,
   getProductCopy,
@@ -29,6 +32,9 @@ export type ProjectionStudioContext = {
   sourceFile: File | null;
   result: ProjectionResponsePayload | null;
   placementMode: PlacementMode;
+  productId: ProductId;
+  finishId: FinishId;
+  placementBox: PlacementBox | null;
 };
 
 type Props = {
@@ -148,20 +154,47 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<ProjectionResponsePayload | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [job, setJob] = useState<ProjectionJob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const copy = getProductCopy(productId, locale);
   const activeFinish = normalizeFinishForProduct(productId, finishId);
   const referenceMedia = getProductById(productId).finishes[activeFinish].packshot;
+  const product = getProductById(productId);
   const projectionReady = isProjectionProductReady(productId);
 
-  useEffect(() => { onContextChange?.({ sourceFile: file, result, placementMode }); }, [file, result, placementMode, onContextChange]);
+  useEffect(() => {
+    onContextChange?.({
+      sourceFile: file,
+      result,
+      placementMode,
+      productId,
+      finishId: activeFinish,
+      placementBox,
+    });
+  }, [
+    activeFinish,
+    file,
+    onContextChange,
+    placementBox,
+    placementMode,
+    productId,
+    result,
+  ]);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
   function chooseFile(event: ChangeEvent<HTMLInputElement>) {
     const next = event.target.files?.[0] ?? null;
     if (preview) URL.revokeObjectURL(preview);
     setFile(next); setPreview(next ? URL.createObjectURL(next) : null); setPlacementBox(null); setResult(null); setJob(null); setError(null);
+    if (next) {
+      trackCommerceEvent("projection_upload", {
+        product_id: productId,
+        finish_id: activeFinish,
+        file_type: next.type,
+        file_size: next.size,
+      });
+    }
   }
 
   function selectProduct(next: ProductId) {
@@ -181,6 +214,13 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
       setJob(payload.job);
       if (payload.job.status === "completed" && payload.job.artifact) return payload.job.artifact;
       if (payload.job.status === "failed" || payload.job.status === "rejected") {
+        if (payload.job.status === "rejected") {
+          trackCommerceEvent("projection_rejected", {
+            product_id: productId,
+            finish_id: activeFinish,
+            code: payload.job.error?.code,
+          });
+        }
         throw new Error(payload.job.error?.message ?? "Projection could not be prepared.");
       }
 
@@ -203,12 +243,88 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
       setJob(payload.job);
       const artifact = await pollProjectionJob(payload.job.id);
       setResult(artifact);
+      trackCommerceEvent("projection_completed", {
+        product_id: productId,
+        finish_id: activeFinish,
+        geometry_similarity: artifact.scores.geometrySimilarity,
+        realism_score: artifact.scores.realismScore,
+      });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : (locale === "fr" ? "La projection n’a pas pu être préparée." : "Projection could not be prepared."));
     } finally { setLoading(false); }
   }
 
   const loadingLabel = job?.stageLabel ?? (locale === "fr" ? "Préparation" : "Preparing");
+
+  function updatePlacement(next: PlacementBox | null) {
+    if (next && !placementBox) {
+      trackCommerceEvent("projection_placement", {
+        product_id: productId,
+        finish_id: activeFinish,
+      });
+    }
+    setPlacementBox(next);
+  }
+
+  function projectionFilename() {
+    return `viaire-${product.code.toLowerCase()}-${activeFinish}-room-view.webp`;
+  }
+
+  function downloadProjection() {
+    if (!result) return;
+    const link = document.createElement("a");
+    link.href = result.projectionImage;
+    link.download = projectionFilename();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    trackCommerceEvent("projection_download", {
+      product_id: productId,
+      finish_id: activeFinish,
+    });
+  }
+
+  async function shareProjection() {
+    if (!result || sharing) return;
+    setSharing(true);
+    try {
+      const response = await fetch(result.projectionImage);
+      const blob = await response.blob();
+      const sharedFile = new File([blob], projectionFilename(), { type: blob.type });
+      const shareData = {
+        title: `${copy.name} · ${getFinishLabel(activeFinish, locale)}`,
+        text:
+          locale === "fr"
+            ? "Voici la pièce VIAIRE dans mon intérieur."
+            : "Here is the VIAIRE piece in my room.",
+        files: [sharedFile],
+      };
+
+      if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+        await navigator.share(shareData);
+        trackCommerceEvent("projection_share", {
+          product_id: productId,
+          finish_id: activeFinish,
+        });
+      } else {
+        downloadProjection();
+      }
+    } catch (caught) {
+      if (caught instanceof DOMException && caught.name === "AbortError") return;
+      downloadProjection();
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  function addProjectionSelectionToBag() {
+    trackCommerceEvent("add_to_cart_from_projection", {
+      product_id: productId,
+      finish_id: activeFinish,
+      value: getFinishPrice(productId, activeFinish, locale),
+    });
+    onUseForRequest?.();
+  }
 
   return (
     <form
@@ -224,14 +340,14 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
         <Button type="button" size="sm" variant="outline" className="col-span-3 sm:col-auto" onClick={() => fileInput.current?.click()}>{file ? (locale === "fr" ? "Changer la photo" : "Change photo") : (locale === "fr" ? "Choisir une photo" : "Choose photo")}</Button>
         {allowProductSwitch ? productList.map((item) => { const ready = isProjectionProductReady(item.id); return <button key={item.id} type="button" disabled={!ready} title={!ready ? (locale === "fr" ? "Dimensions en validation" : "Dimensions pending approval") : undefined} className={cn("min-h-9 rounded-lg border px-2 text-xs sm:shrink-0 sm:px-3", item.id === productId ? "border-foreground bg-foreground text-background" : "border-border bg-card", !ready && "cursor-not-allowed opacity-40")} onClick={() => selectProduct(item.id)}>{item.code}</button>; }) : null}
         <div className="projection-finish-grid col-span-3 grid gap-2 sm:contents">
-          {finishes.map((finish) => <button key={finish.id} type="button" aria-label={finish.labels[locale]} title={finish.labels[locale]} className={cn("flex min-h-9 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11px] sm:shrink-0 sm:justify-start sm:px-3 sm:text-xs", finish.id === activeFinish ? "border-foreground bg-secondary" : "border-border")} onClick={() => { onFinishChange?.(finish.id); setResult(null); }}><span className="size-3 shrink-0 rounded-full border border-black/10" style={{ backgroundColor: finish.hex }} /><span className="truncate">{finish.labels[locale]}</span></button>)}
+          {finishes.map((finish) => <button key={finish.id} type="button" aria-label={finish.labels[locale]} title={finish.labels[locale]} className={cn("flex min-h-9 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11px] sm:shrink-0 sm:justify-start sm:px-3 sm:text-xs", finish.id === activeFinish ? "border-foreground bg-secondary" : "border-border")} onClick={() => { onFinishChange?.(finish.id); setResult(null); }}><span className="size-3 shrink-0 rounded-full border border-black/10" style={{ backgroundColor: finish.hex }} /><span className="truncate sm:hidden">{finish.id === "plaster-rose" ? (locale === "fr" ? "Rose" : "Rose") : finish.labels[locale]}</span><span className="hidden truncate sm:inline">{finish.labels[locale]}</span></button>)}
         </div>
         <div className="projection-placement-grid col-span-3 grid gap-2 sm:contents">
           {getPlacementModesForProduct(productId, locale).slice(0, 3).map((mode) => <button key={mode.id} type="button" className={cn("min-h-9 rounded-lg border px-2 text-[11px] sm:shrink-0 sm:px-3 sm:text-xs", mode.id === placementMode ? "border-foreground bg-secondary" : "border-border")} onClick={() => setPlacementMode(mode.id)}>{mode.label}</button>)}
         </div>
       </div>
 
-      <div className="relative min-h-0 overflow-hidden bg-muted sm:min-h-[460px]">
+      <div className="relative min-h-0 overflow-hidden bg-muted">
         {!preview ? (
           <div className="grid h-full place-items-center px-6 text-center"><div><p className="eyebrow">{locale === "fr" ? "Projection" : "Room view"}</p><h3 className="display-title mt-3 text-3xl sm:mt-4 sm:text-5xl">{locale === "fr" ? "Commencez par votre pièce." : "Start with your room."}</h3><p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground sm:mt-4 sm:leading-7">{locale === "fr" ? "Une photo claire suffit. Vous placerez ensuite la forme d’un clic." : "One clear photo is enough. Then place the form with one click."}</p><Button type="button" className="mt-5 sm:mt-6" onClick={() => fileInput.current?.click()}>{locale === "fr" ? "Choisir une photo" : "Choose photo"}</Button></div></div>
         ) : loading ? (
@@ -239,14 +355,62 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
         ) : result ? (
           <Compare before={preview} after={result.projectionImage} referenceSrc={referenceMedia.mobileSrc} referenceAlt={referenceMedia.alt} locale={locale} />
         ) : (
-          projectionReady ? <PlacementEditor imageUrl={preview} productId={productId} placementBox={placementBox} onChange={setPlacementBox} locale={locale} compact /> : <div className="grid h-full place-items-center px-6 text-center"><div><p className="eyebrow">{copy.name}</p><p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">{locale === "fr" ? "La simulation sera activée après validation des dimensions et des deux ouvertures." : "Room view will be enabled after the dimensions and both openings are manufacturer-approved."}</p></div></div>
+          projectionReady ? <PlacementEditor imageUrl={preview} productId={productId} finishId={activeFinish} placementBox={placementBox} onChange={updatePlacement} locale={locale} compact /> : <div className="grid h-full place-items-center px-6 text-center"><div><p className="eyebrow">{copy.name}</p><p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">{locale === "fr" ? "La simulation sera activée après validation des dimensions et des deux ouvertures." : "Room view will be enabled after the dimensions and both openings are manufacturer-approved."}</p></div></div>
         )}
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-border bg-card p-3 sm:px-5">
-        <div className="min-w-0"><p className="truncate text-sm font-medium">{copy.name} · {getFinishLabel(activeFinish, locale)}</p><p className="truncate text-xs text-muted-foreground">{file ? file.name : (locale === "fr" ? "Aucune photo" : "No photo selected")}</p>{error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}</div>
-        <div className="flex min-w-0 flex-wrap justify-end gap-2">
-          {result ? <><Button type="button" variant="outline" onClick={() => { setResult(null); setJob(null); }}>{locale === "fr" ? "Ajuster" : "Adjust"}</Button><Button type="button" onClick={() => void runProjection()}>{locale === "fr" ? "Relancer" : "Run again"}</Button>{onUseForRequest ? <Button type="button" variant="secondary" onClick={onUseForRequest}>{locale === "fr" ? "Ajouter au panier" : "Add to bag"}</Button> : null}</> : <>{file ? <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder={locale === "fr" ? "Précision facultative" : "Optional note"} className="h-11 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm sm:w-48" /> : null}<button type={file ? "submit" : "button"} onClick={!file ? () => fileInput.current?.click() : undefined} disabled={loading || !projectionReady || Boolean(file && !placementBox)} className={buttonVariants()}>{!projectionReady ? (locale === "fr" ? "Bientôt disponible" : "Coming soon") : !file ? (locale === "fr" ? "Choisir" : "Choose") : placementBox ? (locale === "fr" ? "Créer la projection" : "Create view") : (locale === "fr" ? "Posez la pièce" : "Place the piece")}</button></>}
+      <div className="grid gap-3 border-t border-border bg-card p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-5">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{copy.name} · {getFinishLabel(activeFinish, locale)}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {result
+              ? `${product.dimensionsLabel} · ${getFinishPrice(productId, activeFinish, locale)} · ${locale === "fr" ? "géométrie vérifiée" : "geometry checked"}`
+              : file
+                ? file.name
+                : locale === "fr"
+                  ? "Aucune photo"
+                  : "No photo selected"}
+          </p>
+          {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+          {result ? (
+            <>
+              {onUseForRequest ? (
+                <Button type="button" onClick={addProjectionSelectionToBag}>
+                  <ShoppingBag aria-hidden="true" />
+                  {locale === "fr" ? "Ajouter au panier" : "Add to bag"}
+                </Button>
+              ) : null}
+              <Button type="button" size="icon" variant="outline" onClick={downloadProjection} aria-label={locale === "fr" ? "Télécharger l’image" : "Download image"}>
+                <Download aria-hidden="true" />
+              </Button>
+              <Button type="button" size="icon" variant="outline" disabled={sharing} onClick={() => void shareProjection()} aria-label={locale === "fr" ? "Partager l’image" : "Share image"}>
+                <Share2 aria-hidden="true" />
+              </Button>
+              <Button type="button" size="icon" variant="ghost" onClick={() => { setResult(null); setJob(null); }} aria-label={locale === "fr" ? "Ajuster le placement" : "Adjust placement"}>
+                <SlidersHorizontal aria-hidden="true" />
+              </Button>
+              <Button type="button" size="icon" variant="ghost" onClick={() => void runProjection()} aria-label={locale === "fr" ? "Relancer la projection" : "Run projection again"}>
+                <RefreshCw aria-hidden="true" />
+              </Button>
+            </>
+          ) : (
+            <>
+              {file ? (
+                <input
+                  value={message}
+                  maxLength={320}
+                  onChange={(event) => setMessage(event.target.value)}
+                  placeholder={locale === "fr" ? "Précision facultative" : "Optional note"}
+                  className="h-11 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm sm:w-56"
+                />
+              ) : null}
+              <button type={file ? "submit" : "button"} onClick={!file ? () => fileInput.current?.click() : undefined} disabled={loading || !projectionReady || Boolean(file && !placementBox)} className={buttonVariants()}>
+                {!projectionReady ? (locale === "fr" ? "Bientôt disponible" : "Coming soon") : !file ? (locale === "fr" ? "Choisir" : "Choose") : placementBox ? (locale === "fr" ? "Créer la projection" : "Create view") : (locale === "fr" ? "Posez la pièce" : "Place the piece")}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </form>

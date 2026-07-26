@@ -6,7 +6,9 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import {
+  getFinishById,
   getProductById,
+  type FinishId,
   type Locale,
   type PlacementBox,
   type ProductId,
@@ -22,6 +24,7 @@ type Point = { x: number; y: number };
 type PlacementEditorProps = {
   imageUrl: string;
   productId: ProductId;
+  finishId: FinishId;
   placementBox: PlacementBox | null;
   onChange: (box: PlacementBox | null) => void;
   locale: Locale;
@@ -64,6 +67,7 @@ function getAutomaticBox(
 export default function PlacementEditor({
   imageUrl,
   productId,
+  finishId,
   placementBox,
   onChange,
   locale,
@@ -74,6 +78,7 @@ export default function PlacementEditor({
   const [imageSize, setImageSize] = useState<PixelSize>({ width: 0, height: 0 });
   const [dragging, setDragging] = useState(false);
   const product = getProductById(productId);
+  const finish = getFinishById(finishId);
   const imageRect = getContainRect(frameSize, imageSize);
 
   useEffect(() => {
@@ -187,7 +192,7 @@ export default function PlacementEditor({
           >
             {placementBox ? (
               <div
-                className="absolute border-2 border-white/95 bg-white/5 shadow-[0_0_0_9999px_rgb(0_0_0/0.12),0_12px_36px_rgb(0_0_0/0.22)]"
+                className="absolute shadow-[0_0_0_9999px_rgb(0_0_0/0.12)]"
                 style={{
                   left: `${placementBox.x * 100}%`,
                   top: `${placementBox.y * 100}%`,
@@ -195,17 +200,26 @@ export default function PlacementEditor({
                   height: `${placementBox.height * 100}%`,
                 }}
               >
-                <img
-                  src={product.outlinePath}
-                  alt=""
+                <div
                   aria-hidden="true"
-                  className="absolute inset-[4%] h-[92%] w-[92%] object-contain opacity-75 brightness-0 invert"
+                  className="absolute inset-0 opacity-80 drop-shadow-[0_12px_16px_rgb(0_0_0/0.28)]"
+                  style={{
+                    background: `linear-gradient(115deg, color-mix(in srgb, ${finish.hex} 82%, white), ${finish.hex} 58%, color-mix(in srgb, ${finish.hex} 76%, black))`,
+                    maskImage: `url(${product.maskPath})`,
+                    maskPosition: "center",
+                    maskRepeat: "no-repeat",
+                    maskSize: "100% 100%",
+                    WebkitMaskImage: `url(${product.maskPath})`,
+                    WebkitMaskPosition: "center",
+                    WebkitMaskRepeat: "no-repeat",
+                    WebkitMaskSize: "100% 100%",
+                  }}
                 />
-                <span className="absolute left-2 top-2 rounded-md bg-black/70 px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur">
-                  {product.code}
+                <span className="absolute left-1/2 top-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/70 px-2 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur">
+                  {product.code} · {product.dimensionsLabel}
                 </span>
                 <span
-                  className="absolute bottom-0 left-1/2 size-4 -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-white bg-black shadow"
+                  className="absolute bottom-0 left-1/2 size-5 -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-white bg-black shadow-[0_4px_14px_rgb(0_0_0/0.35)]"
                   aria-hidden="true"
                 />
               </div>

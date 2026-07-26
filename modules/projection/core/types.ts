@@ -36,6 +36,7 @@ export type ProjectionScores = {
   roomPreservationScore: number;
   placementDelta: number;
   scaleDelta: number;
+  aspectRatioDelta: number;
   floorContactDelta: number;
   outsideIntegrationChangeRatio: number;
   passed: boolean;

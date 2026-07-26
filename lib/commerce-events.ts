@@ -4,7 +4,14 @@ export type CommerceEventName =
   | "add_to_cart"
   | "begin_checkout"
   | "purchase"
-  | "projection_open";
+  | "projection_open"
+  | "projection_upload"
+  | "projection_placement"
+  | "projection_completed"
+  | "projection_rejected"
+  | "projection_download"
+  | "projection_share"
+  | "add_to_cart_from_projection";
 
 declare global {
   interface Window {

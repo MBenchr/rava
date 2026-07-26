@@ -134,6 +134,8 @@ export type ProjectionResponsePayload = {
   requestId: string;
   warning?: string;
   productId: ProductId;
+  finishId: FinishId;
+  placementBox: PlacementBox;
 };
 
 export type EstimateRequestPayload = {
