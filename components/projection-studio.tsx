@@ -25,7 +25,6 @@ import {
 } from "@/lib/rava-content";
 import { getContainRect, type PixelSize } from "@/lib/projection-geometry";
 import { cn } from "@/lib/utils";
-import { isProjectionProductReady } from "@/modules/projection/core/reference-kits";
 import type { ProjectionJob } from "@/modules/projection/core/types";
 
 export type ProjectionStudioContext = {
@@ -161,7 +160,6 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
   const activeFinish = normalizeFinishForProduct(productId, finishId);
   const referenceMedia = getProductById(productId).finishes[activeFinish].packshot;
   const product = getProductById(productId);
-  const projectionReady = isProjectionProductReady(productId);
 
   useEffect(() => {
     onContextChange?.({
@@ -198,7 +196,6 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
   }
 
   function selectProduct(next: ProductId) {
-    if (!isProjectionProductReady(next)) return;
     onProductChange?.(next); setPlacementMode(getProductById(next).placementModes[0]); setPlacementBox(null); setResult(null); setJob(null);
   }
 
@@ -213,14 +210,7 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
 
       setJob(payload.job);
       if (payload.job.status === "completed" && payload.job.artifact) return payload.job.artifact;
-      if (payload.job.status === "failed" || payload.job.status === "rejected") {
-        if (payload.job.status === "rejected") {
-          trackCommerceEvent("projection_rejected", {
-            product_id: productId,
-            finish_id: activeFinish,
-            code: payload.job.error?.code,
-          });
-        }
+      if (payload.job.status === "failed") {
         throw new Error(payload.job.error?.message ?? "Projection could not be prepared.");
       }
 
@@ -231,7 +221,6 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
   }
 
   async function runProjection() {
-    if (!projectionReady) { setError(locale === "fr" ? "Cette pièce sera disponible après validation de ses dimensions finales." : "This piece will be available once its final dimensions are approved."); return; }
     if (!file || !placementBox) { setError(locale === "fr" ? "Ajoutez une photo et placez la forme." : "Add a photo and place the form."); return; }
     setLoading(true); setJob(null); setError(null); setResult(null);
     try {
@@ -246,8 +235,6 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
       trackCommerceEvent("projection_completed", {
         product_id: productId,
         finish_id: activeFinish,
-        geometry_similarity: artifact.scores.geometrySimilarity,
-        realism_score: artifact.scores.realismScore,
       });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : (locale === "fr" ? "La projection n’a pas pu être préparée." : "Projection could not be prepared."));
@@ -338,7 +325,7 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
 
       <div className="projection-toolbar grid gap-2 border-b border-border bg-card p-3 sm:flex sm:overflow-x-auto sm:px-5">
         <Button type="button" size="sm" variant="outline" className="col-span-3 sm:col-auto" onClick={() => fileInput.current?.click()}>{file ? (locale === "fr" ? "Changer la photo" : "Change photo") : (locale === "fr" ? "Choisir une photo" : "Choose photo")}</Button>
-        {allowProductSwitch ? productList.map((item) => { const ready = isProjectionProductReady(item.id); return <button key={item.id} type="button" disabled={!ready} title={!ready ? (locale === "fr" ? "Dimensions en validation" : "Dimensions pending approval") : undefined} className={cn("min-h-9 rounded-lg border px-2 text-xs sm:shrink-0 sm:px-3", item.id === productId ? "border-foreground bg-foreground text-background" : "border-border bg-card", !ready && "cursor-not-allowed opacity-40")} onClick={() => selectProduct(item.id)}>{item.code}</button>; }) : null}
+        {allowProductSwitch ? productList.map((item) => <button key={item.id} type="button" className={cn("min-h-9 rounded-lg border px-2 text-xs sm:shrink-0 sm:px-3", item.id === productId ? "border-foreground bg-foreground text-background" : "border-border bg-card")} onClick={() => selectProduct(item.id)}>{item.code}</button>) : null}
         <div className="projection-finish-grid col-span-3 grid gap-2 sm:contents">
           {finishes.map((finish) => <button key={finish.id} type="button" aria-label={finish.labels[locale]} title={finish.labels[locale]} className={cn("flex min-h-9 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11px] sm:shrink-0 sm:justify-start sm:px-3 sm:text-xs", finish.id === activeFinish ? "border-foreground bg-secondary" : "border-border")} onClick={() => { onFinishChange?.(finish.id); setResult(null); }}><span className="size-3 shrink-0 rounded-full border border-black/10" style={{ backgroundColor: finish.hex }} /><span className="truncate sm:hidden">{finish.id === "plaster-rose" ? (locale === "fr" ? "Rose" : "Rose") : finish.labels[locale]}</span><span className="hidden truncate sm:inline">{finish.labels[locale]}</span></button>)}
         </div>
@@ -355,7 +342,7 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
         ) : result ? (
           <Compare before={preview} after={result.projectionImage} referenceSrc={referenceMedia.mobileSrc} referenceAlt={referenceMedia.alt} locale={locale} />
         ) : (
-          projectionReady ? <PlacementEditor imageUrl={preview} productId={productId} finishId={activeFinish} placementBox={placementBox} onChange={updatePlacement} locale={locale} compact /> : <div className="grid h-full place-items-center px-6 text-center"><div><p className="eyebrow">{copy.name}</p><p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">{locale === "fr" ? "La simulation sera activée après validation des dimensions et des deux ouvertures." : "Room view will be enabled after the dimensions and both openings are manufacturer-approved."}</p></div></div>
+          <PlacementEditor imageUrl={preview} productId={productId} finishId={activeFinish} placementBox={placementBox} onChange={updatePlacement} locale={locale} compact />
         )}
       </div>
 
@@ -364,7 +351,7 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
           <p className="truncate text-sm font-medium">{copy.name} · {getFinishLabel(activeFinish, locale)}</p>
           <p className="truncate text-xs text-muted-foreground">
             {result
-              ? `${product.dimensionsLabel} · ${getFinishPrice(productId, activeFinish, locale)} · ${locale === "fr" ? "géométrie vérifiée" : "geometry checked"}`
+              ? `${product.dimensionsLabel ?? copy.descriptor} · ${getFinishPrice(productId, activeFinish, locale)}`
               : file
                 ? file.name
                 : locale === "fr"
@@ -406,8 +393,8 @@ export default function ProjectionStudio({ locale = "en", productId, finishId, o
                   className="h-11 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm sm:w-56"
                 />
               ) : null}
-              <button type={file ? "submit" : "button"} onClick={!file ? () => fileInput.current?.click() : undefined} disabled={loading || !projectionReady || Boolean(file && !placementBox)} className={buttonVariants()}>
-                {!projectionReady ? (locale === "fr" ? "Bientôt disponible" : "Coming soon") : !file ? (locale === "fr" ? "Choisir" : "Choose") : placementBox ? (locale === "fr" ? "Créer la projection" : "Create view") : (locale === "fr" ? "Posez la pièce" : "Place the piece")}
+              <button type={file ? "submit" : "button"} onClick={!file ? () => fileInput.current?.click() : undefined} disabled={loading || Boolean(file && !placementBox)} className={buttonVariants()}>
+                {!file ? (locale === "fr" ? "Choisir" : "Choose") : placementBox ? (locale === "fr" ? "Créer la projection" : "Create view") : (locale === "fr" ? "Posez la pièce" : "Place the piece")}
               </button>
             </>
           )}

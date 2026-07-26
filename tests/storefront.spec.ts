@@ -80,20 +80,6 @@ test("variant changes keep the current hero visible while the next image decodes
 test("storefront selection, cart and successful projection stay usable", async ({ page }) => {
   const jobId = "projection-e2e-completed";
   const placementBox = { x: 0.32, y: 0.2, width: 0.25, height: 0.5 };
-  const scores = {
-    geometryLocked: true,
-    geometrySimilarity: 0.96,
-    placementConfidence: 0.94,
-    realismScore: 0.91,
-    roomPreservationScore: 0.97,
-    placementDelta: 0.01,
-    scaleDelta: 0.01,
-    aspectRatioDelta: 0.01,
-    floorContactDelta: 0.005,
-    outsideIntegrationChangeRatio: 0.002,
-    passed: true,
-    reasons: [],
-  };
 
   await page.route("**/api/projection/jobs", async (route) => {
     if (route.request().method() !== "POST") return route.fallback();
@@ -149,10 +135,9 @@ test("storefront selection, cart and successful projection stay usable", async (
             productId: "elan-o1",
             finishId: "butter",
             placementBox,
-            referenceKitVersion: "2026.07.18-1",
-            promptVersion: "reference-guided-full-photo-v3",
-            rendererVersion: "reference-guided-full-photo-v3",
-            scores,
+            referenceKitVersion: "official-finish-photo-v1",
+            promptVersion: "single-reference-room-edit-v1",
+            rendererVersion: "single-reference-openai-v1",
           },
         },
       }),
@@ -188,7 +173,6 @@ test("storefront selection, cart and successful projection stay usable", async (
   await jobRequest;
 
   await expect(page.getByRole("img", { name: "Projection" })).toBeVisible();
-  await expect(page.getByText(/geometry checked/i)).toBeVisible();
   await expect(page.getByRole("slider", { name: "Compare before and after" })).toBeVisible();
   await page.getByRole("slider", { name: "Compare before and after" }).fill("72");
 

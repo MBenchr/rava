@@ -18,10 +18,6 @@ function projectionErrorLabel(message: string, code?: string) {
     return "Room projection is temporarily unavailable. Your product selection remains in the bag.";
   }
 
-  if (code === "PROJECTION_QUALITY_REJECTED") {
-    return "The result did not pass the geometry check. Adjust the placement and try again.";
-  }
-
   return "The projection could not be prepared right now.";
 }
 

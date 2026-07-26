@@ -14,7 +14,6 @@
     "projection:contract:verify": "tsx scripts/verify-projection-contract.ts",
     "projection:errors:verify": "tsx scripts/verify-projection-errors.ts",
     "projection:openai:verify": "tsx scripts/verify-openai-projection-access.ts",
-    "projection:structured:verify": "tsx scripts/verify-openai-structured-output.ts",
     "markets:verify": "tsx scripts/verify-markets.ts",
     "stripe:tax:configure": "tsx scripts/configure-stripe-tax.ts",
     "test:e2e": "playwright test",

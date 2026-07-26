@@ -35,7 +35,6 @@ import {
   type Locale,
   type ProductId,
 } from "@/lib/rava-content";
-import { isProjectionProductReady } from "@/modules/projection/core/reference-kits";
 
 type BuyPanelProps = {
   locale: Locale;
@@ -71,7 +70,6 @@ export default function BuyPanel({
   const copy = getProductCopy(productId, locale);
   const siteCopy = getSiteCopy(locale);
   const activeFinishId = normalizeFinishForProduct(productId, finishId);
-  const projectionReady = isProjectionProductReady(productId);
   const [buyState, setBuyState] = useState<{ loading: boolean; error: string | null }>({
     loading: false,
     error: null,
@@ -225,17 +223,12 @@ export default function BuyPanel({
       <button
         type="button"
         className="room-preview-link"
-        disabled={!projectionReady}
         onClick={onProjectionOpen}
       >
         <Eye className="size-4" />
-        {projectionReady
-          ? locale === "fr"
-            ? "Voir cette finition dans votre pièce"
-            : "View this finish in your room"
-          : locale === "fr"
-            ? "Projection bientôt disponible"
-            : "Room view coming soon"}
+        {locale === "fr"
+          ? "Voir cette finition dans votre pièce"
+          : "View this finish in your room"}
       </button>
 
       {buyState.error ? <p className="text-sm text-destructive">{buyState.error}</p> : null}

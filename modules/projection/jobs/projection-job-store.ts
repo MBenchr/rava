@@ -32,10 +32,8 @@ const registry =
   });
 
 const stageProgress: Record<ProjectionProgressStage, { progress: number; label: string }> = {
-  analysing: { progress: 14, label: "Analysing room" },
-  rendering: { progress: 36, label: "Preparing product references" },
-  integrating: { progress: 62, label: "Rebuilding the photograph" },
-  verifying: { progress: 88, label: "Checking placement and proportions" },
+  preparing: { progress: 18, label: "Preparing photo and product" },
+  generating: { progress: 58, label: "Creating your room view" },
 };
 
 function publicJob(job: InternalProjectionJob): ProjectionJob {
@@ -120,7 +118,6 @@ async function processJob(id: string, input: GenerateProjectionInput) {
     const job = registry.jobs.get(id);
     if (!job) return;
     const failure = classifyProjectionError(error);
-    const rejected = failure.category === "quality";
     console.error("Projection job processing failed", {
       jobId: id,
       productId: job.productId,
@@ -134,7 +131,7 @@ async function processJob(id: string, input: GenerateProjectionInput) {
       code: failure.code,
       message: failure.publicMessage,
     };
-    updateJob(id, rejected ? "rejected" : "failed", 100, rejected ? "Result rejected" : "Projection failed");
+    updateJob(id, "failed", 100, "Projection failed");
   }
 }
 
@@ -147,7 +144,6 @@ export async function createProjectionJob(input: GenerateProjectionInput) {
   if (
     existing &&
     existing.status !== "failed" &&
-    existing.status !== "rejected" &&
     Date.parse(existing.expiresAt) > Date.now()
   ) {
     return publicJob(existing);

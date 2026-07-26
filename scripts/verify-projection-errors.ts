@@ -23,10 +23,6 @@ const cases = [
     error: { status: 429, code: "rate_limit_exceeded", message: "Too many requests" },
     category: "rate-limit",
   },
-  {
-    error: Object.assign(new Error("Rejected"), { code: "PROJECTION_QUALITY_REJECTED" }),
-    category: "quality",
-  },
 ] as const;
 
 for (const testCase of cases) {

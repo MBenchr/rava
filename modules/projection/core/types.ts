@@ -28,36 +28,17 @@ export type SceneAnalysis = {
   warning?: string;
 };
 
-export type ProjectionScores = {
-  geometryLocked: boolean;
-  geometrySimilarity: number;
-  placementConfidence: number;
-  realismScore: number;
-  roomPreservationScore: number;
-  placementDelta: number;
-  scaleDelta: number;
-  aspectRatioDelta: number;
-  floorContactDelta: number;
-  outsideIntegrationChangeRatio: number;
-  passed: boolean;
-  reasons: string[];
-};
-
 export type ProjectionArtifact = ProjectionResponsePayload & {
   referenceKitVersion: string;
   promptVersion: string;
   rendererVersion: string;
-  scores: ProjectionScores;
 };
 
 export const projectionJobStatuses = [
   "queued",
-  "analysing",
-  "rendering",
-  "integrating",
-  "verifying",
+  "preparing",
+  "generating",
   "completed",
-  "rejected",
   "failed",
 ] as const;
 

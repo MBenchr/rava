@@ -5,7 +5,6 @@ export type ProjectionFailureCategory =
   | "authentication"
   | "configuration"
   | "invalid-image"
-  | "quality"
   | "rate-limit"
   | "reference-asset"
   | "timeout"
@@ -32,8 +31,6 @@ const PUBLIC_MESSAGES: Record<ProjectionFailureCategory, string> = {
     "The projection service is not configured yet. Add the required server configuration.",
   "invalid-image":
     "The image could not be prepared. Use a clear JPG, PNG or WebP photo and try again.",
-  quality:
-    "The result did not pass the geometry check. Adjust the placement and try again.",
   "rate-limit":
     "The projection service is temporarily busy. Wait a moment, then try again.",
   "reference-asset":
@@ -96,11 +93,6 @@ export function classifyProjectionError(error: unknown): ProjectionFailure {
   let category: ProjectionFailureCategory = "unknown";
 
   if (
-    code === "PROJECTION_QUALITY_REJECTED" ||
-    includesAny(haystack, ["projection_quality_rejected", "geometry check"])
-  ) {
-    category = "quality";
-  } else if (
     includesAny(haystack, [
       "billing_hard_limit_reached",
       "insufficient_quota",

@@ -441,7 +441,7 @@ export const products: Record<ProductId, ProductPiece> = {
     lifestyleScenes: [],
     outlinePath: "/reference/viaire-seuil-outline.svg",
     maskPath: "/reference/viaire-seuil-mask.svg",
-    placementModes: ["against-wall", "divider", "other"],
+    placementModes: ["against-wall", "divider"],
     projectionReferences: [
       "public/projection-kits/elan-o1/front-orthographic.png",
       "public/projection-kits/elan-o1/front-right-30.png",
@@ -525,7 +525,7 @@ export const products: Record<ProductId, ProductPiece> = {
     lifestyleScenes: [],
     outlinePath: "/reference/viaire-portee-outline.svg",
     maskPath: "/reference/viaire-portee-mask.svg",
-    placementModes: ["against-wall", "divider", "behind-sofa", "under-window", "other"],
+    placementModes: ["against-wall", "divider"],
     projectionReferences: [
       "public/projection-kits/portee-o2/front-orthographic.png",
       "public/projection-kits/portee-o2/front-right-30.png",
@@ -608,7 +608,7 @@ export const products: Record<ProductId, ProductPiece> = {
     lifestyleScenes: [],
     outlinePath: "/reference/viaire-veille-outline.svg",
     maskPath: "/reference/viaire-veille-mask.svg",
-    placementModes: ["bedside", "against-wall", "other"],
+    placementModes: ["against-wall", "divider"],
     projectionReferences: [
       "public/viaire/veille-o4/scenes/viaire-veille-chalk-lifestyle.webp",
       "public/viaire/veille-o4/scenes/viaire-veille-sage-lifestyle.webp",

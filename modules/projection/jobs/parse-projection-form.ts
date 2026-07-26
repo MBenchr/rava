@@ -6,7 +6,6 @@ import {
   placementModeIds,
   productIds,
 } from "@/lib/rava-content";
-import { isProjectionProductReady } from "@/modules/projection/core/reference-kits";
 
 const payloadSchema = z.object({
   productId: z.enum(productIds),
@@ -62,13 +61,6 @@ export async function parseProjectionForm(request: Request): Promise<GeneratePro
 
   if (!parsed.success) {
     throw new ProjectionRequestError("The projection settings are incomplete or invalid.");
-  }
-
-  if (!isProjectionProductReady(parsed.data.productId)) {
-    throw new ProjectionRequestError(
-      "This product will be available in the simulator once its final dimensions are approved.",
-      409,
-    );
   }
 
   return {
