@@ -6,6 +6,7 @@ import {
   type ProjectionProgressStage,
 } from "@/lib/openai-projection";
 import type { ProjectionJob, ProjectionJobStatus } from "@/modules/projection/core/types";
+import { classifyProjectionError } from "@/modules/projection/jobs/projection-error";
 
 const RETENTION_MS = 24 * 60 * 60 * 1000;
 const MAX_LOCAL_JOBS = 40;
@@ -110,21 +111,20 @@ async function processJob(id: string, input: GenerateProjectionInput) {
   } catch (error) {
     const job = registry.jobs.get(id);
     if (!job) return;
-    const code =
-      typeof error === "object" && error && "code" in error && typeof error.code === "string"
-        ? error.code
-        : "PROJECTION_FAILED";
-    const rejected = code === "PROJECTION_QUALITY_REJECTED";
-    const billingBlocked =
-      code === "billing_hard_limit_reached" ||
-      code === "insufficient_quota";
+    const failure = classifyProjectionError(error);
+    const rejected = failure.category === "quality";
+    console.error("Projection job processing failed", {
+      jobId: id,
+      productId: job.productId,
+      finishId: job.finishId,
+      stage: job.stageLabel,
+      category: failure.category,
+      status: failure.status,
+      ...failure.diagnostic,
+    });
     job.error = {
-      code,
-      message: rejected
-        ? "The result did not pass the geometry check. Adjust the placement and try again."
-        : billingBlocked
-          ? "The OpenAI projection credit limit has been reached. Update OpenAI billing, then try again."
-          : "The projection could not be prepared right now.",
+      code: failure.code,
+      message: failure.publicMessage,
     };
     updateJob(id, rejected ? "rejected" : "failed", 100, rejected ? "Result rejected" : "Projection failed");
   }

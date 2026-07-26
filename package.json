@@ -11,6 +11,7 @@
     "assets:metadata": "node scripts/tag-ai-image-metadata.mjs",
     "projection:kits": "node scripts/generate-projection-reference-kits.mjs",
     "projection:verify": "tsx scripts/verify-projection-engine.ts",
+    "projection:errors:verify": "tsx scripts/verify-projection-errors.ts",
     "markets:verify": "tsx scripts/verify-markets.ts",
     "stripe:tax:configure": "tsx scripts/configure-stripe-tax.ts",
     "test:e2e": "playwright test",
