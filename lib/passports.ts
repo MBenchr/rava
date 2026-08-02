@@ -1,4 +1,4 @@
-import { getServerEnv } from "@/lib/server-env";
+import { getDatabasePool } from "@/lib/database";
 import {
   finishIds,
   productIds,
@@ -102,32 +102,32 @@ function isPassportStatus(value: unknown): value is PassportStatus {
   );
 }
 
+function databaseDate(value: unknown, dateOnly = false) {
+  if (value instanceof Date) {
+    const iso = value.toISOString();
+    return dateOnly ? iso.slice(0, 10) : iso;
+  }
+  return typeof value === "string" ? value : null;
+}
+
 export async function getPublicPassport(
   serialValue: string,
 ): Promise<PublicPassport | null> {
   const parsed = parsePassportSerial(serialValue);
   if (!parsed) return null;
 
-  const supabaseUrl = getServerEnv("SUPABASE_URL");
-  const serviceRoleKey = getServerEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !serviceRoleKey) return null;
+  const pool = getDatabasePool();
+  if (!pool) return null;
 
-  const headers = {
-    apikey: serviceRoleKey,
-    Authorization: `Bearer ${serviceRoleKey}`,
-  };
-  const base = `${supabaseUrl.replace(/\/$/, "")}/rest/v1`;
-  const passportResponse = await fetch(
-    `${base}/isandre_passports?serial=eq.${encodeURIComponent(parsed.serial)}&select=serial,product_id,finish_id,status,manufactured_at,activated_at,material_batch,edition&limit=1`,
-    { headers, cache: "no-store" },
+  const passportResult = await pool.query<Record<string, unknown>>(
+    `select serial, product_id, finish_id, status, manufactured_at,
+            activated_at, material_batch, edition
+       from public.isandre_passports
+      where serial = $1
+      limit 1`,
+    [parsed.serial],
   );
-
-  if (!passportResponse.ok) {
-    throw new Error(`PASSPORT_STORE_HTTP_${passportResponse.status}`);
-  }
-
-  const rows = (await passportResponse.json()) as Array<Record<string, unknown>>;
-  const row = rows[0];
+  const row = passportResult.rows[0];
   if (
     !row ||
     !isProductId(row.product_id) ||
@@ -138,33 +138,32 @@ export async function getPublicPassport(
     return null;
   }
 
-  const repairsResponse = await fetch(
-    `${base}/isandre_passport_repairs?passport_serial=eq.${encodeURIComponent(parsed.serial)}&select=completed_at,kind,public_summary&order=completed_at.desc`,
-    { headers, cache: "no-store" },
+  const repairsResult = await pool.query<Record<string, unknown>>(
+    `select completed_at, kind, public_summary
+       from public.isandre_passport_repairs
+      where passport_serial = $1
+      order by completed_at desc`,
+    [parsed.serial],
   );
-  const repairRows = repairsResponse.ok
-    ? ((await repairsResponse.json()) as Array<Record<string, unknown>>)
-    : [];
+  const repairRows = repairsResult.rows;
 
   return {
     serial: String(row.serial),
     productId: row.product_id,
     finishId: row.finish_id,
     status: row.status,
-    manufacturedAt:
-      typeof row.manufactured_at === "string" ? row.manufactured_at : null,
-    activatedAt:
-      typeof row.activated_at === "string" ? row.activated_at : null,
+    manufacturedAt: databaseDate(row.manufactured_at, true),
+    activatedAt: databaseDate(row.activated_at),
     materialBatch:
       typeof row.material_batch === "string" ? row.material_batch : null,
     edition: typeof row.edition === "string" ? row.edition : null,
     repairs: repairRows.flatMap((repair) =>
-      typeof repair.completed_at === "string" &&
+      databaseDate(repair.completed_at) &&
       typeof repair.kind === "string" &&
       typeof repair.public_summary === "string"
         ? [
             {
-              completedAt: repair.completed_at,
+              completedAt: databaseDate(repair.completed_at)!,
               kind: repair.kind,
               summary: repair.public_summary,
             },

@@ -13,7 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   if (!isCatalogReleased()) return [];
 
   const base = (
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://isandre.com"
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://taqa.isandre.com"
   ).replace(/\/$/, "");
   const now = new Date();
   const languageAlternates = (productId?: (typeof productList)[number]["id"], finishId?: string) => {

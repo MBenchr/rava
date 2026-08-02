@@ -83,9 +83,9 @@ Les secrets restent exclusivement côté serveur :
 - `STRIPE_WEBHOOK_SECRET`
 - `RESEND_API_KEY`
 - `RESEND_FROM`
+- `SENDGRID_API_KEY` et `SENDGRID_FROM_EMAIL` peuvent remplacer Resend
 - `ORDER_NOTIFICATION_EMAIL`
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `ISANDRE_DATABASE_URL` (connexion Postgres du rôle ṬĀQA à privilèges minimaux)
 - `NEXT_PUBLIC_SITE_URL`
 
 La configuration Stripe Tax utilise également :

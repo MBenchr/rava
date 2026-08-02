@@ -21,12 +21,12 @@ export const checkoutPayloadSchema = z
     locale: z.enum(["en", "fr"]).default("en"),
     marketCode: z.enum(marketCodes),
     email: z.string().email().optional(),
-    checkoutAttemptId: z.string().uuid().optional(),
+    checkoutAttemptId: z.string().uuid(),
   })
   .strict();
 
 export type ValidatedCheckoutPayload = CheckoutPayload & {
-  checkoutAttemptId?: string;
+  checkoutAttemptId: string;
 };
 
 export function parseCheckoutPayload(value: unknown): ValidatedCheckoutPayload {
@@ -37,7 +37,5 @@ export function checkoutIdempotencyKey(
   payload: ValidatedCheckoutPayload,
   mode: "hosted" | "express",
 ) {
-  return payload.checkoutAttemptId
-    ? `isandre-${mode}-${payload.checkoutAttemptId}`
-    : undefined;
+  return `isandre-taqa-${mode}-${payload.checkoutAttemptId}`;
 }

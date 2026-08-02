@@ -12,7 +12,8 @@ import { detectMarketFromHeaders } from "@/lib/market-detection";
 import { brandIdentity, getProductById, siteMeta } from "@/lib/isandre/catalog";
 import { isCatalogReleased } from "@/lib/isandre/release";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://isandre.com";
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://taqa.isandre.com";
 const display = Bodoni_Moda({
   subsets: ["latin"],
   variable: "--font-display",

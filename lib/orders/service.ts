@@ -48,8 +48,8 @@ function orderLines(session: Stripe.Checkout.Session): OrderLine[] {
         stripeProduct && !("deleted" in stripeProduct)
           ? stripeProduct.metadata
           : null;
-      const productId = metadata?.productId;
-      const finishId = metadata?.finishId;
+      const productId = metadata?.product_id ?? metadata?.productId;
+      const finishId = metadata?.finish_id ?? metadata?.finishId;
 
       return {
         productId:
@@ -74,7 +74,8 @@ export function orderFromStripeSession(
   existing?: OrderRecord | null,
 ): OrderRecord {
   const now = new Date().toISOString();
-  const marketValue = session.metadata?.marketCode;
+  const marketValue =
+    session.metadata?.market_code ?? session.metadata?.marketCode;
 
   return {
     id: existing?.id ?? randomUUID(),
@@ -107,6 +108,7 @@ export async function processPaidCheckoutEvent(
   dependencies: {
     repository?: OrderRepository;
     sendNotifications?: NotificationSender;
+    payloadSha256?: string;
   } = {},
 ) {
   const repository = dependencies.repository ?? getOrderRepository();
@@ -116,6 +118,7 @@ export async function processPaidCheckoutEvent(
       stripeEventId: eventId,
       stripeSessionId: session.id,
       kind: eventType,
+      payloadSha256: dependencies.payloadSha256,
     }),
   );
 

@@ -45,7 +45,8 @@ function buildContext(session: Stripe.Checkout.Session): ConfirmationContext {
   return {
     customerEmail: session.customer_details?.email ?? null,
     locale,
-    marketCode: session.metadata?.marketCode ?? "—",
+    marketCode:
+      session.metadata?.market_code ?? session.metadata?.marketCode ?? "—",
     orderReference: session.id.slice(-12).toUpperCase(),
     total: formatAmount(session, locale),
     lines:

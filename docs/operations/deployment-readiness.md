@@ -1,7 +1,7 @@
 # Préparation au déploiement
 
-Date : 29 juillet 2026  
-État : `LOCAL READY / REMOTE RELEASE BLOCKED`
+Date : 2 août 2026
+État : `REMOTE PREVIEW CONFIGURED / PUBLIC COMMERCE GATED`
 
 ## Contrat
 
@@ -46,10 +46,12 @@ de développement.
 
 ### Commandes et email
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `RESEND_API_KEY`
-- `RESEND_FROM`
+- `ISANDRE_DATABASE_URL`, fourni par le pooler Supabase et authentifié par le
+  rôle dédié `isandre_taqa_render_login` ; la connexion reste chiffrée en mode
+  libpq `require` ; passer à `verify-full` dès que le certificat CA du projet
+  est monté dans le runtime ;
+- `RESEND_API_KEY` et `RESEND_FROM`, ou `SENDGRID_API_KEY` et
+  `SENDGRID_FROM_EMAIL` ;
 - `ORDER_NOTIFICATION_EMAIL`
 
 ### Projection
@@ -57,8 +59,10 @@ de développement.
 - `OPENAI_API_KEY`
 - `OPENAI_IMAGE_MODEL=gpt-image-2`
 
-Les valeurs ne sont jamais stockées dans Git. Les sources de vérité et preuves
-requises sont H-011 à H-016 du registre des blocages.
+Les valeurs ne sont jamais stockées dans Git. Le rôle ṬĀQA ne possède pas la
+clé service-role et ne peut ni écrire dans l'univers Eclipse, ni utiliser les
+parcours de propriété encore fermés. Les preuves commerciales encore requises
+sont H-011 à H-015 et H-017 à H-021 du registre des blocages.
 
 ## Ordre de mise en service
 
@@ -93,5 +97,6 @@ requises sont H-011 à H-016 du registre des blocages.
   passeports, SEO, projection et lancement réussis ;
 - trois captures pleine page et quatre PDF de travail contrôlés visuellement.
 
-Aucun déploiement, push Git ou changement de secret distant n'a été effectué
-pendant A17.
+Le service Render existant est conservé sur le plan gratuit et configuré comme
+preview non indexée. Le domaine canonique est `https://taqa.isandre.com` ;
+`https://taka.isandre.com` reste un alias de redirection.

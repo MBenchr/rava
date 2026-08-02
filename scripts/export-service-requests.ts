@@ -18,12 +18,9 @@ async function main() {
       "output/operations/service-requests.csv",
   );
 
-  if (
-    !getServerEnv("SUPABASE_URL") ||
-    !getServerEnv("SUPABASE_SERVICE_ROLE_KEY")
-  ) {
+  if (!getServerEnv("ISANDRE_DATABASE_URL")) {
     throw new Error(
-      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for a CRM export.",
+      "ISANDRE_DATABASE_URL is required for a CRM export.",
     );
   }
 

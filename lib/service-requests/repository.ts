@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
 
+import type { Pool } from "pg";
+
+import { getDatabasePool } from "@/lib/database";
 import { getServerEnv } from "@/lib/server-env";
 import type {
   ServiceRequestAuditEvent,
@@ -124,86 +127,80 @@ function fromRow(row: Record<string, unknown>): ServiceRequestRecord {
   };
 }
 
-export function createSupabaseServiceRequestRepository(
-  supabaseUrl: string,
-  serviceRoleKey: string,
+export function createPostgresServiceRequestRepository(
+  pool: Pool,
 ): ServiceRequestRepository {
-  const baseUrl = `${supabaseUrl.replace(/\/$/, "")}/rest/v1`;
-  const headers = {
-    apikey: serviceRoleKey,
-    Authorization: `Bearer ${serviceRoleKey}`,
-    "Content-Type": "application/json",
-  };
-
-  async function request(
-    route: string,
-    init: RequestInit = {},
-    preference?: string,
-  ) {
-    const response = await fetch(`${baseUrl}${route}`, {
-      ...init,
-      headers: {
-        ...headers,
-        ...(preference ? { Prefer: preference } : {}),
-        ...init.headers,
-      },
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      throw new Error(`SERVICE_REQUEST_STORE_HTTP_${response.status}`);
-    }
-    if (response.status === 204) return null;
-    return response.json() as Promise<unknown>;
-  }
-
   return {
     async createRequest(serviceRequest) {
-      await request(
-        "/isandre_service_requests",
-        { method: "POST", body: JSON.stringify(toRow(serviceRequest)) },
-        "return=minimal",
+      const row = toRow(serviceRequest);
+      await pool.query(
+        `insert into public.isandre_service_requests (
+           id, reference, kind, source, status, locale, name, email,
+           organization, phone, location, product_id, finish_id, quantity,
+           message, privacy_accepted, marketing_consent, notification_status,
+           created_at, updated_at
+         ) values (
+           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+           $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+         )`,
+        [
+          row.id,
+          row.reference,
+          row.kind,
+          row.source,
+          row.status,
+          row.locale,
+          row.name,
+          row.email,
+          row.organization,
+          row.phone,
+          row.location,
+          row.product_id,
+          row.finish_id,
+          row.quantity,
+          row.message,
+          row.privacy_accepted,
+          row.marketing_consent,
+          row.notification_status,
+          row.created_at,
+          row.updated_at,
+        ],
       );
     },
     async getRequest(id) {
-      const rows = (await request(
-        `/isandre_service_requests?id=eq.${encodeURIComponent(id)}&select=*&limit=1`,
-      )) as Array<Record<string, unknown>>;
-      return rows[0] ? fromRow(rows[0]) : null;
+      const result = await pool.query<Record<string, unknown>>(
+        `select * from public.isandre_service_requests where id = $1 limit 1`,
+        [id],
+      );
+      return result.rows[0] ? fromRow(result.rows[0]) : null;
     },
     async updateNotificationStatus(id, status) {
-      await request(
-        `/isandre_service_requests?id=eq.${encodeURIComponent(id)}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify({
-            notification_status: status,
-            updated_at: new Date().toISOString(),
-          }),
-        },
-        "return=minimal",
+      await pool.query(
+        `update public.isandre_service_requests
+            set notification_status = $2, updated_at = now()
+          where id = $1`,
+        [id, status],
       );
     },
     async appendAudit(event) {
-      await request(
-        "/isandre_service_request_events",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            id: event.id,
-            request_id: event.requestId,
-            kind: event.kind,
-            details: event.details,
-            created_at: event.createdAt,
-          }),
-        },
-        "return=minimal",
+      await pool.query(
+        `insert into public.isandre_service_request_events (
+           id, request_id, kind, details, created_at
+         ) values ($1, $2, $3, $4::jsonb, $5)`,
+        [
+          event.id,
+          event.requestId,
+          event.kind,
+          JSON.stringify(event.details),
+          event.createdAt,
+        ],
       );
     },
     async listRequests() {
-      const rows = (await request(
-        "/isandre_service_requests?select=*&order=created_at.desc",
-      )) as Array<Record<string, unknown>>;
-      return rows.map(fromRow);
+      const result = await pool.query<Record<string, unknown>>(
+        `select * from public.isandre_service_requests order by created_at desc`,
+      );
+      return result.rows.map(fromRow);
     },
   };
 }
@@ -213,14 +210,10 @@ let repository: ServiceRequestRepository | null = null;
 export function getServiceRequestRepository() {
   if (repository) return repository;
 
-  const supabaseUrl = getServerEnv("SUPABASE_URL");
-  const serviceRoleKey = getServerEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const pool = getDatabasePool();
 
-  if (supabaseUrl && serviceRoleKey) {
-    repository = createSupabaseServiceRequestRepository(
-      supabaseUrl,
-      serviceRoleKey,
-    );
+  if (pool) {
+    repository = createPostgresServiceRequestRepository(pool);
     return repository;
   }
 

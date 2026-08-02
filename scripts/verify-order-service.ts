@@ -23,8 +23,15 @@ const session = {
     amount_tax: 0,
   },
   metadata: {
+    house: "isandre",
+    universe: "taqa",
+    order_kind: "catalog",
+    catalog_version: "isandre-taqa-2026.08.02.1",
+    source_version: "isandre-commerce-metadata-v1",
+    checkout_attempt_id: "7baef7d2-fb64-4436-b70a-0d03ad220b21",
     locale: "fr",
-    marketCode: "CH",
+    market_code: "CH",
+    price_book_version: "taqa-price-book-2026.08.02.1",
   },
   customer_details: {
     address: {
@@ -78,8 +85,8 @@ const session = {
             livemode: false,
             marketing_features: [],
             metadata: {
-              productId: "seuil-01",
-              finishId: "sage",
+              product_id: "seuil-01",
+              finish_id: "sage",
             },
             name: "SEUIL 01",
             package_dimensions: null,

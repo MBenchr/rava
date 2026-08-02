@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: isandre-storefront
+    name: isandre-taqa
     runtime: node
     plan: free
     repo: https://github.com/MBenchr/rava
@@ -13,7 +13,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_SITE_URL
-        sync: false
+        value: https://taqa.isandre.com
       - key: NEXT_PUBLIC_CONTACT_EMAIL
         sync: false
       - key: CATALOG_RELEASED
@@ -46,13 +46,15 @@ services:
         sync: false
       - key: STRIPE_TAX_HEAD_OFFICE_COUNTRY
         sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: ISANDRE_DATABASE_URL
         sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM_EMAIL
         sync: false
       - key: ORDER_NOTIFICATION_EMAIL
         sync: false

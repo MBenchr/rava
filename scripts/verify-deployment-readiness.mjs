@@ -5,7 +5,7 @@ const blueprint = readFileSync("render.yaml", "utf8");
 const healthRoute = readFileSync("app/api/health/route.ts", "utf8");
 const brandContract = readFileSync("lib/isandre/brand.ts", "utf8");
 
-assert.match(blueprint, /name:\s+isandre-storefront/u);
+assert.match(blueprint, /name:\s+isandre-taqa/u);
 assert.match(blueprint, /autoDeploy:\s+false/u);
 assert.match(blueprint, /healthCheckPath:\s+\/api\/health/u);
 assert.match(
@@ -27,17 +27,16 @@ for (const key of [
   "OPENAI_API_KEY",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
-  "SUPABASE_URL",
-  "SUPABASE_SERVICE_ROLE_KEY",
-  "RESEND_API_KEY",
-  "RESEND_FROM",
+  "ISANDRE_DATABASE_URL",
+  "SENDGRID_API_KEY",
+  "SENDGRID_FROM_EMAIL",
 ]) {
   assert.match(blueprint, new RegExp(`key:\\s+${key}`, "u"), `${key} missing`);
 }
 
 assert.doesNotMatch(
   healthRoute,
-  /OPENAI_API_KEY|RESEND_API_KEY|STRIPE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY/u,
+  /OPENAI_API_KEY|RESEND_API_KEY|SENDGRID_API_KEY|STRIPE_SECRET_KEY|ISANDRE_DATABASE_URL/u,
 );
 
 for (const file of [

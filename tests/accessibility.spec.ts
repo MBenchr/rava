@@ -83,7 +83,7 @@ test("deployment health remains public-safe while commerce is gated", async ({
   await expect(health.json()).resolves.toEqual({
     brand: "gated",
     catalog: "gated",
-    service: "isandre-storefront",
+    service: "isandre-taqa",
     status: "ok",
   });
 

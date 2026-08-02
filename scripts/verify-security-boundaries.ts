@@ -36,7 +36,7 @@ async function main() {
     "OPENAI_API_KEY",
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
-    "SUPABASE_SERVICE_ROLE_KEY",
+    "ISANDRE_DATABASE_URL",
     "RESEND_API_KEY",
   ];
 
@@ -107,4 +107,3 @@ async function main() {
 }
 
 void main();
-

@@ -5,6 +5,7 @@ import {
   parseCheckoutPayload,
 } from "@/lib/checkout-contract";
 import { buildCheckoutSessionParams } from "@/lib/checkout-session";
+import { recordCheckoutAttempt } from "@/lib/isandre/checkout-attempts";
 import { getStripeClient } from "@/lib/stripe";
 
 export async function POST(request: Request) {
@@ -17,6 +18,12 @@ export async function POST(request: Request) {
         idempotencyKey: checkoutIdempotencyKey(payload, "hosted"),
       },
     );
+    try {
+      await recordCheckoutAttempt(payload, "hosted", session);
+    } catch (error) {
+      await stripe.checkout.sessions.expire(session.id).catch(() => undefined);
+      throw error;
+    }
     return NextResponse.json({ id: session.id, url: session.url });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Checkout could not be prepared.";

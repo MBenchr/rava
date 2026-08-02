@@ -1,6 +1,9 @@
+import { createHash } from "node:crypto";
+
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
+import { isTaqaCheckoutMetadata } from "@/lib/isandre/commerce";
 import { processPaidCheckoutEvent } from "@/lib/orders/service";
 import { getServerEnv } from "@/lib/server-env";
 import { getStripeClient } from "@/lib/stripe";
@@ -21,6 +24,10 @@ export async function POST(request: Request) {
     ) {
       const eventSession = event.data.object as Stripe.Checkout.Session;
 
+      if (!isTaqaCheckoutMetadata(eventSession.metadata)) {
+        return NextResponse.json({ received: true, ignored: "foreign_universe" });
+      }
+
       if (
         eventSession.payment_status === "paid" ||
         eventSession.payment_status === "no_payment_required"
@@ -28,7 +35,9 @@ export async function POST(request: Request) {
         const session = await stripe.checkout.sessions.retrieve(eventSession.id, {
           expand: ["line_items.data.price.product"],
         });
-        await processPaidCheckoutEvent(event.id, event.type, session);
+        await processPaidCheckoutEvent(event.id, event.type, session, {
+          payloadSha256: createHash("sha256").update(rawBody).digest("hex"),
+        });
       }
     }
 

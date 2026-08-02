@@ -9,7 +9,7 @@ export function GET() {
     {
       brand: isBrandCleared() ? "cleared" : "gated",
       catalog: isCatalogReleased() ? "released" : "gated",
-      service: "isandre-storefront",
+      service: "isandre-taqa",
       status: "ok",
     },
     {

@@ -5,6 +5,7 @@ import {
   parseCheckoutPayload,
 } from "@/lib/checkout-contract";
 import { buildCheckoutSessionParams } from "@/lib/checkout-session";
+import { recordCheckoutAttempt } from "@/lib/isandre/checkout-attempts";
 import { getServerEnv } from "@/lib/server-env";
 import { getStripeClient } from "@/lib/stripe";
 
@@ -20,12 +21,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const session = await getStripeClient().checkout.sessions.create(
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.create(
       buildCheckoutSessionParams(request, payload, "elements"),
       {
         idempotencyKey: checkoutIdempotencyKey(payload, "express"),
       },
     );
+    try {
+      await recordCheckoutAttempt(payload, "express", session);
+    } catch (error) {
+      await stripe.checkout.sessions.expire(session.id).catch(() => undefined);
+      throw error;
+    }
 
     if (!session.client_secret) {
       throw new Error("Stripe returned no Checkout client secret.");

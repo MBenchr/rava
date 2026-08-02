@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import MakingPage from "@/components/making-page";
 
 const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://isandre.com"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://taqa.isandre.com"
 ).replace(/\/$/, "");
 
 export const metadata: Metadata = {

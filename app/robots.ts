@@ -4,7 +4,7 @@ import { isCatalogReleased } from "@/lib/isandre/release";
 
 export default function robots(): MetadataRoute.Robots {
   const base = (
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://isandre.com"
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://taqa.isandre.com"
   ).replace(/\/$/, "");
 
   if (!isCatalogReleased()) {

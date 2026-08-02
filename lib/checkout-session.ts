@@ -1,13 +1,17 @@
 import Stripe from "stripe";
 
+import type { ValidatedCheckoutPayload } from "@/lib/checkout-contract";
 import {
   brandIdentity,
   getFinishLabel,
   getFinishPriceCents,
   getProductById,
   getProductCopy,
-  type CheckoutPayload,
 } from "@/lib/isandre/catalog";
+import {
+  buildTaqaCheckoutMetadata,
+  isandreCommerceContract,
+} from "@/lib/isandre/commerce";
 import { assertLiveCheckoutReleased } from "@/lib/isandre/release";
 import {
   formatMarketAmount,
@@ -23,7 +27,21 @@ export function resolveCheckoutOrigin(request: Request) {
   const requestUrl = new URL(request.url);
   const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
   const candidateHost = forwardedHost ?? requestUrl.host;
-  const configuredSiteUrl = getServerEnv("NEXT_PUBLIC_SITE_URL");
+  const configuredSiteUrlValue = getServerEnv("NEXT_PUBLIC_SITE_URL");
+  const configuredSiteUrl = (() => {
+    if (!configuredSiteUrlValue) return undefined;
+    try {
+      const parsed = new URL(configuredSiteUrlValue);
+      return parsed.hostname === "taqa.isandre.com" ||
+        parsed.hostname === "taka.isandre.com" ||
+        parsed.hostname === "localhost" ||
+        parsed.hostname === "127.0.0.1"
+        ? parsed.toString().replace(/\/$/, "")
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
   const configuredHost = configuredSiteUrl
     ? new URL(configuredSiteUrl).host
     : undefined;
@@ -33,13 +51,18 @@ export function resolveCheckoutOrigin(request: Request) {
     ?.trim()
     .toLowerCase();
   const isAllowedHost =
-    candidateHost === "isandre.com" ||
-    candidateHost === "www.isandre.com" ||
+    candidateHost === "taqa.isandre.com" ||
     candidateHost === configuredHost ||
     candidateHost === "localhost" ||
     candidateHost.startsWith("localhost:") ||
     candidateHost === "127.0.0.1" ||
     candidateHost.startsWith("127.0.0.1:");
+
+  if (candidateHost === "taka.isandre.com") {
+    return (
+      configuredSiteUrl ?? isandreCommerceContract.canonicalOrigin
+    ).replace(/\/$/, "");
+  }
 
   if (isAllowedHost) {
     const isLocal =
@@ -52,10 +75,12 @@ export function resolveCheckoutOrigin(request: Request) {
     return `${protocol}://${candidateHost}`;
   }
 
-  return (configuredSiteUrl ?? requestUrl.origin).replace(/\/$/, "");
+  return (
+    configuredSiteUrl ?? isandreCommerceContract.canonicalOrigin
+  ).replace(/\/$/, "");
 }
 
-function deliveryEstimate(marketCode: CheckoutPayload["marketCode"]) {
+function deliveryEstimate(marketCode: ValidatedCheckoutPayload["marketCode"]) {
   const region = getMarket(marketCode).region;
 
   if (region === "france") return { minimum: 2, maximum: 5 };
@@ -67,7 +92,7 @@ function deliveryEstimate(marketCode: CheckoutPayload["marketCode"]) {
 
 export function buildCheckoutSessionParams(
   request: Request,
-  payload: CheckoutPayload,
+  payload: ValidatedCheckoutPayload,
   uiMode: CheckoutUiMode,
 ): Stripe.Checkout.SessionCreateParams {
   assertLiveCheckoutReleased(payload.items.map((item) => item.productId));
@@ -76,6 +101,11 @@ export function buildCheckoutSessionParams(
   const paymentMethodConfiguration = getServerEnv("STRIPE_PAYMENT_METHOD_CONFIGURATION_ID");
   const shippingAmount = getMarketShippingCents(payload.marketCode);
   const delivery = deliveryEstimate(payload.marketCode);
+  const commerceMetadata = buildTaqaCheckoutMetadata({
+    checkoutAttemptId: payload.checkoutAttemptId,
+    marketCode: payload.marketCode,
+    locale: payload.locale,
+  });
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = payload.items.map((item) => {
     const product = getProductById(item.productId);
     const copy = getProductCopy(item.productId, payload.locale);
@@ -103,12 +133,16 @@ export function buildCheckoutSessionParams(
           images: [`${origin}${product.finishes[item.finishId].packshot.src}`],
           tax_code: getServerEnv("STRIPE_TAX_CODE_FURNITURE") ?? "txcd_99999999",
           metadata: {
-            productId: item.productId,
-            finishId: item.finishId,
-            canonicalEuroUnitAmount: String(canonicalEuroAmount),
-            localCatalogUnitAmount: String(localAmount),
-            catalogPricingPolicy: "fixed-market-anchor-v1",
-            marketCode: payload.marketCode,
+            house: commerceMetadata.house,
+            universe: commerceMetadata.universe,
+            catalog_version: commerceMetadata.catalog_version,
+            price_book_version: commerceMetadata.price_book_version,
+            product_id: item.productId,
+            variant_id: `${item.productId}-${item.finishId}`,
+            finish_id: item.finishId,
+            canonical_eur_unit_amount: String(canonicalEuroAmount),
+            local_catalog_unit_amount: String(localAmount),
+            market_code: payload.marketCode,
           },
         },
       },
@@ -162,22 +196,13 @@ export function buildCheckoutSessionParams(
             ? "Merci d’avoir choisi ISANDRE."
             : "Thank you for choosing ISANDRE.",
         metadata: {
+          ...commerceMetadata,
           brand: brandIdentity.name,
-          marketCode: payload.marketCode,
-          locale: payload.locale,
         },
       },
     },
     allow_promotion_codes: false,
-    metadata: {
-      brand: brandIdentity.name,
-      orderKind: "catalog",
-      locale: payload.locale,
-      marketCode: payload.marketCode,
-      catalogVersion: "isandre-taqa-v1",
-      catalogPricingPolicy: "fixed-market-anchor-v1",
-      taxEngine: "stripe-tax",
-    },
+    metadata: commerceMetadata,
     ...(paymentMethodConfiguration
       ? { payment_method_configuration: paymentMethodConfiguration }
       : {}),

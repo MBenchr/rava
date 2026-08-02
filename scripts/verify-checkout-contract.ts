@@ -37,7 +37,7 @@ assert.throws(
 
 assert.equal(
   checkoutIdempotencyKey(payload, "hosted"),
-  `isandre-hosted-${checkoutAttemptId}`,
+  `isandre-taqa-hosted-${checkoutAttemptId}`,
 );
 
 const localRequest = new Request("http://127.0.0.1:3012/api/checkout", {
@@ -54,7 +54,10 @@ const publicRequest = new Request("http://internal:10000/api/checkout", {
     "x-forwarded-proto": "http",
   },
 });
-assert.equal(resolveCheckoutOrigin(publicRequest), "https://isandre.com");
+assert.equal(
+  resolveCheckoutOrigin(publicRequest),
+  "https://taqa.isandre.com",
+);
 
 const params = buildCheckoutSessionParams(localRequest, payload, "hosted");
 const lineItem = params.line_items?.[0];
@@ -69,6 +72,14 @@ assert.equal(
   "Stripe price data must be derived from the server-side catalog.",
 );
 assert.equal(params.automatic_tax?.enabled, true);
+assert.equal(params.metadata?.house, "isandre");
+assert.equal(params.metadata?.universe, "taqa");
+assert.equal(params.metadata?.order_kind, "catalog");
+assert.equal(params.metadata?.checkout_attempt_id, checkoutAttemptId);
+assert.match(
+  String(params.metadata?.price_book_version ?? ""),
+  /^taqa-price-book-/,
+);
 assert.deepEqual(params.shipping_address_collection?.allowed_countries, ["CH"]);
 assert.match(params.success_url ?? "", /^http:\/\/127\.0\.0\.1:3012\/commander/);
 assert.match(params.cancel_url ?? "", /^http:\/\/127\.0\.0\.1:3012\/commander/);

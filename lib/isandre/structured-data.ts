@@ -14,9 +14,10 @@ import {
   type ProductId,
 } from "@/lib/isandre/catalog";
 import { isProductCommerceReleased } from "@/lib/isandre/release";
+import { isandreCommerceContract } from "@/lib/isandre/commerce";
 
 const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://isandre.com"
+  process.env.NEXT_PUBLIC_SITE_URL ?? isandreCommerceContract.canonicalOrigin
 ).replace(/\/$/, "");
 
 function absoluteUrl(pathname: string) {
@@ -27,9 +28,9 @@ function buildOrganization() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "@id": `${siteUrl}#organization`,
+    "@id": isandreCommerceContract.houseOrganizationId,
     name: brandIdentity.name,
-    url: siteUrl,
+    url: isandreCommerceContract.houseOrigin,
     email: siteMeta.leadEmail,
     description: brandIdentity.signatures.en,
   };
@@ -61,9 +62,9 @@ export function buildHomeStructuredData(locale: Locale = "en") {
       "@type": "WebSite",
       "@id": `${siteUrl}#website`,
       url: siteUrl,
-      name: brandIdentity.name,
+      name: `${brandIdentity.name} — ${brandIdentity.collection}`,
       inLanguage: locale === "fr" ? "fr-FR" : "en-GB",
-      publisher: { "@id": `${siteUrl}#organization` },
+      publisher: { "@id": isandreCommerceContract.houseOrganizationId },
     },
     {
       "@context": "https://schema.org",
@@ -140,11 +141,10 @@ function buildVariant(
             priceCurrency: "EUR",
             availability: "https://schema.org/InStock",
             url: absoluteUrl(route),
-            seller: { "@id": `${siteUrl}#organization` },
+            seller: { "@id": isandreCommerceContract.houseOrganizationId },
             itemCondition: "https://schema.org/NewCondition",
           },
         }
       : {}),
   };
 }
-

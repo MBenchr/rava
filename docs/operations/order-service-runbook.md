@@ -2,23 +2,27 @@
 
 ## Source de vérité
 
-Stripe prouve le paiement. `isandre_orders` conserve la projection de commande.
-`isandre_order_events` conserve l'idempotence et l'audit des webhooks. Un email
-n'est jamais une preuve de paiement ou une base de commande.
+Stripe prouve le paiement. `isandre_core.orders` et
+`isandre_core.order_lines` constituent le registre canonique de la maison.
+`public.isandre_orders` est la projection opérationnelle ṬĀQA.
+`isandre_core.payment_events` conserve l'idempotence, le bail de traitement et
+l'audit des webhooks. Un email n'est jamais une preuve de paiement ou une base
+de commande.
 
 ## Mise en service
 
-1. Appliquer `supabase/migrations/202607280001_isandre_orders.sql`.
-2. Configurer `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` côté serveur.
+1. Appliquer les migrations `isandre_orders`, `isandre_house_core` et
+   `bind_taqa_runtime_and_core_projection`.
+2. Configurer `ISANDRE_DATABASE_URL` avec le rôle dédié
+   `isandre_taqa_render_login`. Ne jamais fournir la clé service-role au site.
 3. Configurer le webhook Stripe sur `/api/stripe/webhook`.
 4. Écouter au minimum :
    - `checkout.session.completed` ;
    - `checkout.session.async_payment_succeeded`.
-5. Configurer `RESEND_API_KEY`, `RESEND_FROM` et
-   `ORDER_NOTIFICATION_EMAIL`.
+5. Configurer Resend ou SendGrid, puis `ORDER_NOTIFICATION_EMAIL`.
 6. Envoyer une commande test et vérifier :
    - une ligne dans `isandre_orders` ;
-   - un événement `completed` ;
+   - un événement `completed` dans `isandre_core.payment_events` ;
    - les IDs produit/finition dans `lines` ;
    - l'email client ;
    - l'email studio.
@@ -42,7 +46,7 @@ la preuve dans un événement d'audit avant ouverture au public.
 ## Incident webhook
 
 1. Lire le statut HTTP Stripe et l'ID d'événement.
-2. Chercher `stripe_event_id` dans `isandre_order_events`.
+2. Chercher `stripe_event_id` dans `isandre_core.payment_events`.
 3. Si `failed`, corriger la cause puis utiliser le bouton Stripe « Resend ».
 4. Ne jamais modifier l'ID d'événement.
 5. Si l'ordre existe mais l'email est `pending`, corriger Resend et relancer
@@ -62,4 +66,3 @@ Désactivé par défaut. Il ne peut être activé qu'après consentement marketi
 explicite, preuve du consentement, lien de désinscription et politique de
 rétention. L'email connu uniquement par Stripe Checkout ne constitue pas
 automatiquement un consentement marketing.
-

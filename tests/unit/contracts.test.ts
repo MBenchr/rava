@@ -5,12 +5,17 @@ import {
   checkoutIdempotencyKey,
   parseCheckoutPayload,
 } from "@/lib/checkout-contract";
+import { normalizeDatabaseConnectionString } from "@/lib/database";
 import {
   finishIds,
   getFinishPriceCents,
   getProductById,
   productIds,
 } from "@/lib/isandre/catalog";
+import {
+  buildTaqaCheckoutMetadata,
+  isTaqaCheckoutMetadata,
+} from "@/lib/isandre/commerce";
 import {
   canDispatchAnalytics,
   createMeasurementConsent,
@@ -115,11 +120,41 @@ test("checkout idempotency is stable and mode-scoped", () => {
 
   assert.equal(
     checkoutIdempotencyKey(payload, "hosted"),
-    `isandre-hosted-${checkoutAttemptId}`,
+    `isandre-taqa-hosted-${checkoutAttemptId}`,
   );
   assert.equal(
     checkoutIdempotencyKey(payload, "express"),
-    `isandre-express-${checkoutAttemptId}`,
+    `isandre-taqa-express-${checkoutAttemptId}`,
+  );
+});
+
+test("Stripe events are accepted only for the canonical TAQA universe", () => {
+  const metadata = buildTaqaCheckoutMetadata({
+    checkoutAttemptId: "cfb873bc-8a9e-4b65-973e-c41ba143eb84",
+    marketCode: "FR",
+    locale: "fr",
+  });
+
+  assert.equal(isTaqaCheckoutMetadata(metadata), true);
+  assert.equal(
+    isTaqaCheckoutMetadata({ house: "isandre", universe: "eclipse" }),
+    false,
+  );
+  assert.equal(isTaqaCheckoutMetadata({ universe: "taqa" }), false);
+});
+
+test("Supabase session-pooler URLs retain encrypted libpq semantics", () => {
+  const normalized = normalizeDatabaseConnectionString(
+    "postgres://runtime:secret@aws-0-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require",
+  );
+
+  assert.match(normalized, /sslmode=require/u);
+  assert.match(normalized, /uselibpqcompat=true/u);
+  assert.equal(
+    normalizeDatabaseConnectionString(
+      "postgres://runtime:secret@database.example.com:5432/postgres?sslmode=require",
+    ),
+    "postgres://runtime:secret@database.example.com:5432/postgres?sslmode=require",
   );
 });
 

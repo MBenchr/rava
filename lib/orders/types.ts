@@ -59,6 +59,7 @@ export type OrderAuditEvent = {
   stripeEventId: string;
   stripeSessionId: string;
   kind: string;
+  payloadSha256: string;
   status: "processing" | "completed" | "failed";
   errorCode: string | null;
   createdAt: string;
