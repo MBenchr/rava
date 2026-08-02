@@ -15,7 +15,7 @@ import {
   isMarketCode,
   type MarketCode,
 } from "@/lib/markets";
-import type { Locale } from "@/lib/rava-content";
+import type { Locale } from "@/lib/isandre/catalog";
 
 type MarketContextValue = {
   marketCode: MarketCode;
@@ -24,8 +24,8 @@ type MarketContextValue = {
   source: "detected" | "manual";
 };
 
-const STORAGE_KEY = "viaire-market-v1";
-const COOKIE_KEY = "viaire-market";
+const STORAGE_KEY = "isandre-market-v1";
+const COOKIE_KEY = "isandre-market";
 const MarketContext = createContext<MarketContextValue | null>(null);
 
 function inferBrowserMarket(locale: Locale): MarketCode {
@@ -55,6 +55,7 @@ export function MarketProvider({
     const saved = window.localStorage.getItem(STORAGE_KEY);
 
     if (isMarketCode(saved)) {
+      window.localStorage.setItem(STORAGE_KEY, saved);
       window.queueMicrotask(() => {
         setMarketCodeState(saved);
         setSource("manual");

@@ -1,6 +1,6 @@
 import CartPage from "@/components/cart-page";
 import { getStripeClient } from "@/lib/stripe";
-import type { Locale } from "@/lib/rava-content";
+import type { Locale } from "@/lib/isandre/catalog";
 
 type Props = {
   searchParams?: Promise<{
@@ -38,7 +38,7 @@ export default async function CommanderPage({ searchParams }: Props) {
       orderReference = session.id.slice(-12).toUpperCase();
       orderedItems =
         session.line_items?.data.map((item) => ({
-          name: item.description ?? "VIAIRE",
+          name: item.description ?? "ISANDRE",
           quantity: item.quantity ?? 1,
         })) ?? [];
       status = paymentVerified ? "success" : "cancelled";

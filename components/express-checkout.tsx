@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { CartLine } from "@/components/cart-provider";
 import type { MarketCode } from "@/lib/markets";
-import type { Locale } from "@/lib/rava-content";
+import type { Locale } from "@/lib/isandre/catalog";
 
 type ExpressCheckoutProps = {
   items: CartLine[];
@@ -124,9 +124,10 @@ function ExpressCheckoutSession({
 }: ExpressCheckoutProps) {
   const [session, setSession] = useState<SessionData | null>(null);
   const [failed, setFailed] = useState(false);
+  const [checkoutAttemptId] = useState(() => crypto.randomUUID());
   const sessionKey = useMemo(
-    () => JSON.stringify({ items, locale, marketCode }),
-    [items, locale, marketCode],
+    () => JSON.stringify({ items, locale, marketCode, checkoutAttemptId }),
+    [checkoutAttemptId, items, locale, marketCode],
   );
 
   useEffect(() => {

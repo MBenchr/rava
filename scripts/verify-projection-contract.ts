@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 
 import {
+  buildProjectionPrompt,
   chooseApiCanvas,
   fitPlacementBoxToProductAspect,
+  PROJECTION_PROMPT_VERSION,
 } from "@/lib/openai-projection";
 
 const imageCases = [
@@ -43,6 +45,21 @@ assert.ok(Math.abs(fittedFloorAnchor.x - requestedFloorAnchor.x) < 0.0001);
 assert.ok(Math.abs(fittedFloorAnchor.y - requestedFloorAnchor.y) < 0.0001);
 assert.ok(Math.abs(fittedPixelAspect - productAspect) < 0.0001);
 
+const prompt = buildProjectionPrompt({
+  productId: "seuil-01",
+  finishId: "chalk",
+  placementMode: "against-wall",
+  placementBox: fitted,
+  message: "Keep the chair in the foreground.",
+});
+
+assert.equal(PROJECTION_PROMPT_VERSION, "single-reference-room-edit-v2");
+assert.match(prompt, /IMAGE 2 is the only authorised reference/);
+assert.match(prompt, /102 cm wide × 184 cm high × 42 cm deep/);
+assert.match(prompt, /Do not add, remove, merge or reshape an opening/);
+assert.match(prompt, /not a collage or 3D overlay/);
+assert.match(prompt, /Keep the chair in the foreground/);
+
 console.log(
-  `Projection contract verified: ${imageCases.length} image formats and deterministic placement.`,
+  `Projection contract verified: ${imageCases.length} image formats, deterministic placement and one official reference.`,
 );

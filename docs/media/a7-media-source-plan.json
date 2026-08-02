@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 2,
+  "releaseVersion": "2026.07.29-a7.4",
+  "brand": "ISANDRE",
+  "collection": "TAQA",
+  "sourceRoot": "media/a7-sources",
+  "publicRoot": "public/isandre/media",
+  "aiDisclosure": "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia",
+  "colorPolicy": {
+    "deliveryProfile": "sRGB IEC61966-2.1",
+    "digitalSourceBitDepth": 8,
+    "physicalMasterBitDepth": 16,
+    "physicalMasterGate": "H-006/H-009/H-010"
+  },
+  "rightsPolicy": {
+    "status": "pending-final-clearance",
+    "origin": "ai-assisted",
+    "rightsOwner": "pending",
+    "territories": "pending",
+    "channels": "pending",
+    "releaseGate": "H-010"
+  },
+  "labels": {
+    "products": {
+      "seuil-01": {
+        "en": "SEUIL 01",
+        "fr": "SEUIL 01"
+      },
+      "portee-02": {
+        "en": "PORTÉE 02",
+        "fr": "PORTÉE 02"
+      },
+      "veille-03": {
+        "en": "VEILLE 03",
+        "fr": "VEILLE 03"
+      }
+    },
+    "finishes": {
+      "chalk": {
+        "en": "Chalk",
+        "fr": "Craie"
+      },
+      "butter": {
+        "en": "Butter",
+        "fr": "Beurre"
+      },
+      "sage": {
+        "en": "Sage",
+        "fr": "Sauge"
+      },
+      "rose-clay": {
+        "en": "Rose Clay",
+        "fr": "Argile rose"
+      }
+    }
+  },
+  "policies": {
+    "geometry": "The approved V2040 silhouette, opening count, opening order, proportions, wall density, base and depth remain immutable across finish and context.",
+    "crop": "No derivative may crop the product silhouette. Mobile artboards use contain until a separately approved mobile master exists.",
+    "proof": "Generated media creates desire and supports commerce. It never proves manufacturing, origin, workshop, artisan, customer ownership, press coverage or measured colour.",
+    "material": "A continuous low-sheen mineral-feel surface is represented digitally. Commercial material claims remain gated by H-009 and H-010."
+  },
+  "roles": {
+    "C01": {
+      "family": "commerce",
+      "label": "Canonical frontal packshot",
+      "finishes": "all",
+      "required": true,
+      "allowProps": false,
+      "allowScene": false
+    },
+    "C02": {
+      "family": "commerce",
+      "label": "Canonical front-right three-quarter packshot",
+      "finishes": "all",
+      "required": true,
+      "allowProps": false,
+      "allowScene": false
+    },
+    "D01": {
+      "family": "desire",
+      "label": "Primary lived-in campaign scene",
+      "finishes": "all",
+      "required": true,
+      "allowProps": true,
+      "allowScene": true
+    },
+    "D02": {
+      "family": "desire",
+      "label": "Lived-in morning scene",
+      "finishes": ["chalk", "butter"],
+      "required": true,
+      "launchSelected": false,
+      "allowProps": true,
+      "allowScene": true
+    },
+    "D03": {
+      "family": "desire",
+      "label": "Lived-in evening scene",
+      "finishes": ["sage", "rose-clay"],
+      "required": true,
+      "launchSelected": false,
+      "allowProps": true,
+      "allowScene": true
+    },
+    "D04": {
+      "family": "desire",
+      "label": "Functional-use acquisition scene",
+      "finishes": "all",
+      "required": true,
+      "allowProps": true,
+      "allowScene": true,
+      "launchSelected": true
+    },
+    "P01": {
+      "family": "proof",
+      "label": "Profile and depth",
+      "finishes": ["chalk"],
+      "required": true,
+      "allowProps": false,
+      "allowScene": false
+    },
+    "P02": {
+      "family": "proof",
+      "label": "Physically correct open-back rear view",
+      "finishes": ["chalk"],
+      "products": ["seuil-01", "portee-02"],
+      "required": true,
+      "allowProps": false,
+      "allowScene": false
+    },
+    "P03": {
+      "family": "proof",
+      "label": "Dimensioned technical plate",
+      "finishes": ["chalk"],
+      "required": true,
+      "allowProps": false,
+      "allowScene": false,
+      "generator": "scripts/build-isandre-technical-media.mjs"
+    },
+    "P04": {
+      "family": "proof",
+      "label": "Human-scale or architectural-scale reference",
+      "finishes": ["chalk"],
+      "required": true,
+      "allowProps": true,
+      "allowScene": true
+    }
+  },
+  "products": {
+    "seuil-01": {
+      "status": "digital-approved",
+      "geometryStatus": "approved",
+      "expectedFaceRatio": 0.55435,
+      "finishes": ["chalk", "butter", "sage", "rose-clay"]
+    },
+    "portee-02": {
+      "status": "digital-approved",
+      "geometryStatus": "approved",
+      "expectedFaceRatio": 1.80392,
+      "finishes": ["chalk", "butter", "sage", "rose-clay"]
+    },
+    "veille-03": {
+      "status": "concept-blocked",
+      "geometryStatus": "blocked",
+      "expectedFaceRatio": null,
+      "finishes": ["chalk", "butter", "sage", "rose-clay"]
+    }
+  }
+}

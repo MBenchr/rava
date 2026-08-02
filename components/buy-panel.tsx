@@ -11,6 +11,8 @@ import QuantityStepper from "@/components/quantity-stepper";
 import MarketSelector from "@/components/market-selector";
 import { useMarket } from "@/components/market-provider";
 import { Button } from "@/components/ui/button";
+import { useTechnicalSheet } from "@/components/technical-sheet-provider";
+import { getContent } from "@/content";
 import { openStripeCheckout } from "@/lib/checkout-client";
 import { trackCommerceEvent } from "@/lib/commerce-events";
 import { preloadProductMedia } from "@/lib/image-preload";
@@ -34,7 +36,7 @@ import {
   type FinishId,
   type Locale,
   type ProductId,
-} from "@/lib/rava-content";
+} from "@/lib/isandre/catalog";
 
 type BuyPanelProps = {
   locale: Locale;
@@ -47,6 +49,7 @@ type BuyPanelProps = {
   onProjectionOpen: () => void;
   onProductChange?: (productId: ProductId) => void;
   cartMessage?: string | null;
+  headingLevel?: 1 | 2;
   showProductLink?: boolean;
   showProductSwitch?: boolean;
 };
@@ -62,11 +65,14 @@ export default function BuyPanel({
   onProjectionOpen,
   onProductChange,
   cartMessage,
+  headingLevel = 2,
   showProductLink = false,
   showProductSwitch = false,
 }: BuyPanelProps) {
   const product = getProductById(productId);
   const { market, marketCode } = useMarket();
+  const { openTechnicalSheet } = useTechnicalSheet();
+  const content = getContent(locale);
   const copy = getProductCopy(productId, locale);
   const siteCopy = getSiteCopy(locale);
   const activeFinishId = normalizeFinishForProduct(productId, finishId);
@@ -77,6 +83,7 @@ export default function BuyPanel({
   const actionsRef = useRef<HTMLDivElement>(null);
   const [showMobileBuyBar, setShowMobileBuyBar] = useState(true);
   const [mobileConfiguratorOpen, setMobileConfiguratorOpen] = useState(false);
+  const [showInlineExpressCheckout, setShowInlineExpressCheckout] = useState(false);
   const canonicalPriceCents = getFinishPriceCents(productId, activeFinishId) ?? 0;
   const marketPriceCents = getMarketAmountCentsFromEur(
     canonicalPriceCents,
@@ -93,6 +100,7 @@ export default function BuyPanel({
     marketCode,
     locale,
   );
+  const ProductHeading = headingLevel === 1 ? "h1" : "h2";
 
   useEffect(() => {
     const actions = actionsRef.current;
@@ -107,6 +115,17 @@ export default function BuyPanel({
 
     observer.observe(actions);
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 768px)");
+    const syncExpressCheckout = () =>
+      setShowInlineExpressCheckout(desktopQuery.matches);
+
+    syncExpressCheckout();
+    desktopQuery.addEventListener("change", syncExpressCheckout);
+    return () =>
+      desktopQuery.removeEventListener("change", syncExpressCheckout);
   }, []);
 
   async function buyNow() {
@@ -125,7 +144,7 @@ export default function BuyPanel({
     } catch (error) {
       setBuyState({
         loading: false,
-        error: error instanceof Error ? error.message : "Checkout is unavailable.",
+        error: error instanceof Error ? error.message : content.errors.checkout,
       });
     }
   }
@@ -145,7 +164,7 @@ export default function BuyPanel({
 
       <div className="purchase-panel__heading">
         <div>
-          <h2 className="display-title">{copy.name}</h2>
+          <ProductHeading className="display-title">{copy.name}</ProductHeading>
           <p>{copy.descriptor}</p>
         </div>
         <p className="purchase-panel__price">{formattedPrice}</p>
@@ -156,7 +175,7 @@ export default function BuyPanel({
 
       <div className="purchase-panel__finish">
         <div>
-          <p>{locale === "fr" ? "Finition" : "Finish"}</p>
+          <p>{content.commerce.finish}</p>
           <span>{getFinishLabel(activeFinishId, locale)}</span>
         </div>
         <div className="finish-choices">
@@ -184,8 +203,8 @@ export default function BuyPanel({
 
       <div className="purchase-panel__quantity">
         <div>
-          <p>{locale === "fr" ? "Quantité" : "Quantity"}</p>
-          <span>{locale === "fr" ? "Fabriqué pour vous" : "Made for you"}</span>
+          <p>{content.commerce.quantity}</p>
+          <span>{content.service.productionTitle}</span>
         </div>
         <QuantityStepper value={quantity} onChange={onQuantityChange} locale={locale} />
       </div>
@@ -193,32 +212,26 @@ export default function BuyPanel({
       <div ref={actionsRef} className="purchase-panel__actions">
         <Button size="lg" onClick={buyNow} disabled={buyState.loading}>
           {buyState.loading
-            ? locale === "fr"
-              ? "Ouverture…"
-              : "Opening…"
-            : locale === "fr"
-              ? "Acheter maintenant"
-              : "Buy now"}
+            ? content.common.opening
+            : content.commerce.buyNow}
           {!buyState.loading ? <ArrowUpRight className="size-4" /> : null}
         </Button>
         <Button size="lg" variant="outline" onClick={onAddToCart}>
-          {locale === "fr" ? "Ajouter au panier" : "Add to bag"}
+          {content.commerce.addToBag}
         </Button>
       </div>
 
-      <div className="purchase-panel__express">
-        <p>{locale === "fr" ? "Paiement express" : "Express checkout"}</p>
-        <ExpressCheckout
-          items={[{ productId, finishId: activeFinishId, quantity }]}
-          locale={locale}
-          marketCode={marketCode}
-        />
-        <small>
-          {locale === "fr"
-            ? "Stripe affiche les options les plus rapides disponibles sur cet appareil."
-            : "Stripe shows the fastest options available on this device."}
-        </small>
-      </div>
+      {showInlineExpressCheckout ? (
+        <div className="purchase-panel__express">
+          <p>{content.common.expressCheckout}</p>
+          <ExpressCheckout
+            items={[{ productId, finishId: activeFinishId, quantity }]}
+            locale={locale}
+            marketCode={marketCode}
+          />
+          <small>{content.common.expressCheckoutNote}</small>
+        </div>
+      ) : null}
 
       <button
         type="button"
@@ -226,9 +239,7 @@ export default function BuyPanel({
         onClick={onProjectionOpen}
       >
         <Eye className="size-4" />
-        {locale === "fr"
-          ? "Voir cette finition dans votre pièce"
-          : "View this finish in your room"}
+        {content.home.viewAtHome}
       </button>
 
       {buyState.error ? <p className="text-sm text-destructive">{buyState.error}</p> : null}
@@ -237,23 +248,21 @@ export default function BuyPanel({
       <div className="purchase-panel__assurance">
         <ShieldCheck className="size-4" />
         <p>
-          {locale === "fr"
-            ? `Livraison ${formattedShipping}. Taxes calculées par Stripe avant paiement.`
-            : `${formattedShipping} delivery. Taxes calculated by Stripe before payment.`}
+          {formattedShipping} · {content.commerce.taxNote}
         </p>
       </div>
 
       <div className="purchase-panel__details">
         <details>
-          <summary>{locale === "fr" ? "Dimensions et matière" : "Dimensions and material"}</summary>
+          <summary>{content.common.dimensionsAndMaterial}</summary>
           <p>
-            {product.dimensionsLabel ?? (locale === "fr" ? "Voir la fiche technique." : "See technical sheet.")}
+            {product.dimensionsLabel ?? content.common.technicalSheet}
             {" · "}
-            {locale === "fr" ? "Surface minérale mate, structure traversante." : "Matte mineral surface, open-backed structure."}
+            {content.common.materialSummary}
           </p>
         </details>
         <details>
-          <summary>{locale === "fr" ? "Fabrication et livraison" : "Production and delivery"}</summary>
+          <summary>{content.common.productionAndDelivery}</summary>
           <p>{siteCopy.fabricationDelay}. {siteCopy.deliveryLine}</p>
         </details>
       </div>
@@ -261,14 +270,14 @@ export default function BuyPanel({
       <div className="purchase-panel__links">
         {showProductLink ? (
           <Link href={`${getLocalizedRoute(productId, locale)}?finish=${activeFinishId}`}>
-            {locale === "fr" ? "Voir tous les détails" : "View all details"}
+            {content.common.viewAllDetails}
           </Link>
         ) : null}
-        <Link href={locale === "fr" ? "/fr/fiche-technique" : "/technical-sheet"}>
-          {locale === "fr" ? "Fiche technique" : "Technical sheet"}
-        </Link>
+        <button type="button" onClick={() => openTechnicalSheet(productId)}>
+          {content.common.technicalSheet}
+        </button>
         <a href={`mailto:${siteMeta.leadEmail}`}>
-          {locale === "fr" ? "Parler au studio" : "Speak to the studio"}
+          {content.common.speakToStudio}
         </a>
       </div>
 
@@ -279,11 +288,11 @@ export default function BuyPanel({
         {mobileConfiguratorOpen && onProductChange ? (
           <div className="mobile-buy-configurator">
             <div className="mobile-buy-configurator__header">
-              <p>{locale === "fr" ? "Votre pièce" : "Your piece"}</p>
+              <p>{content.common.selection}</p>
               <button
                 type="button"
                 onClick={() => setMobileConfiguratorOpen(false)}
-                aria-label={locale === "fr" ? "Fermer" : "Close"}
+                aria-label={content.common.close}
               >
                 <X className="size-4" />
               </button>
@@ -319,7 +328,7 @@ export default function BuyPanel({
                 setMobileConfiguratorOpen(false);
               }}
             >
-              {locale === "fr" ? "Ajouter au panier" : "Add to bag"}
+              {content.commerce.addToBag}
             </Button>
           </div>
         ) : null}
@@ -346,7 +355,7 @@ export default function BuyPanel({
           <ChevronUp className="size-4" aria-hidden="true" />
         </button>
         <Button onClick={buyNow} disabled={buyState.loading}>
-          {locale === "fr" ? "Acheter" : "Buy now"}
+          {content.commerce.buyNow}
         </Button>
       </div>
     </aside>

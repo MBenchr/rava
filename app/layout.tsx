@@ -6,20 +6,22 @@ import "./globals.css";
 
 import { CartProvider } from "@/components/cart-provider";
 import { MarketProvider } from "@/components/market-provider";
+import MeasurementConsentManager from "@/components/measurement-consent";
+import TechnicalSheetProvider from "@/components/technical-sheet-provider";
 import { detectMarketFromHeaders } from "@/lib/market-detection";
-import { brandIdentity, getProductById, siteMeta } from "@/lib/rava-content";
+import { brandIdentity, getProductById, siteMeta } from "@/lib/isandre/catalog";
+import { isCatalogReleased } from "@/lib/isandre/release";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://viaire.fr";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://isandre.com";
 const display = Bodoni_Moda({
   subsets: ["latin"],
-  style: ["normal", "italic"],
   variable: "--font-display",
 });
 const sans = Manrope({
   subsets: ["latin"],
   variable: "--font-sans",
 });
-const ogImage = getProductById("elan-o1").storefrontHero;
+const ogImage = getProductById("seuil-01").storefrontHero;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -29,6 +31,9 @@ export const metadata: Metadata = {
   },
   description: siteMeta.description,
   keywords: siteMeta.keywords,
+  robots: isCatalogReleased()
+    ? { index: true, follow: true }
+    : { index: false, follow: false, noarchive: true },
   alternates: {
     canonical: "/",
     languages: { "en-GB": "/", "fr-FR": "/fr", "x-default": "/" },
@@ -59,7 +64,7 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const requestHeaders = await headers();
-  const activeLocale = requestHeaders.get("x-viaire-locale") === "fr" ? "fr" : "en";
+  const activeLocale = requestHeaders.get("x-isandre-locale") === "fr" ? "fr" : "en";
   const htmlLocale = activeLocale === "fr" ? "fr-FR" : "en-GB";
   const initialMarketCode = detectMarketFromHeaders(requestHeaders, activeLocale);
 
@@ -71,7 +76,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     >
       <body>
         <MarketProvider locale={activeLocale} initialMarketCode={initialMarketCode}>
-          <CartProvider>{children}</CartProvider>
+          <CartProvider>
+            <TechnicalSheetProvider locale={activeLocale}>
+              {children}
+              <MeasurementConsentManager locale={activeLocale} />
+            </TechnicalSheetProvider>
+          </CartProvider>
         </MarketProvider>
       </body>
     </html>

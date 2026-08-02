@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  testIgnore: ["**/unit/**"],
   timeout: 90_000,
   expect: { timeout: 70_000 },
   use: {
@@ -13,7 +14,7 @@ export default defineConfig({
       name: "mobile-chromium",
       use: {
         browserName: "chromium",
-        channel: "chrome",
+        locale: "en-GB",
         viewport: { width: 390, height: 844 },
       },
     },

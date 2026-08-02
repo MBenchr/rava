@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { preloadMediaAsset } from "@/lib/image-preload";
-import type { MediaAsset } from "@/lib/rava-content";
+import type { MediaAsset } from "@/lib/isandre/catalog";
 
 type ResponsiveProductImageProps = {
   media: MediaAsset;
@@ -48,10 +48,45 @@ export default function ResponsiveProductImage({
       className="absolute inset-0 block"
       data-image-src={displayedMedia.src}
     >
-      <source media="(max-width: 639px)" srcSet={displayedMedia.mobileSrc} />
-      {/* Optimized WebP derivatives are generated ahead of time for both breakpoints. */}
+      {displayedMedia.mobileAvifSrcSet ? (
+        <source
+          media="(max-width: 639px)"
+          type="image/avif"
+          srcSet={displayedMedia.mobileAvifSrcSet}
+          sizes={sizes}
+        />
+      ) : null}
+      <source
+        media="(max-width: 639px)"
+        type="image/webp"
+        srcSet={displayedMedia.mobileSrcSet ?? displayedMedia.mobileSrc}
+        sizes={sizes}
+      />
+      {displayedMedia.mobileJpegSrcSet ? (
+        <source
+          media="(max-width: 639px)"
+          type="image/jpeg"
+          srcSet={displayedMedia.mobileJpegSrcSet}
+          sizes={sizes}
+        />
+      ) : null}
+      {displayedMedia.avifSrcSet ? (
+        <source
+          type="image/avif"
+          srcSet={displayedMedia.avifSrcSet}
+          sizes={sizes}
+        />
+      ) : null}
+      {displayedMedia.srcSet ? (
+        <source
+          type="image/webp"
+          srcSet={displayedMedia.srcSet}
+          sizes={sizes}
+        />
+      ) : null}
       <img
-        src={displayedMedia.src}
+        src={displayedMedia.fallbackSrc ?? displayedMedia.src}
+        srcSet={displayedMedia.jpegSrcSet}
         alt={displayedMedia.alt}
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "auto"}

@@ -1,0 +1,5 @@
+test_id,date_start,date_end,market,audience_stage,channel,hypothesis,product,finish,creative_ids,destination,primary_metric,guardrail_metric,budget,status,result,decision,owner
+TEST-001,,,GB,discovery,organic-video,"A visible passage communicates openness faster than a styled still",seuil-01,chalk,"V02-S-A|V02-S-B|V02-S-C",/products/seuil-01,qualified_product_view,negative_feedback_rate,0,draft,,,
+TEST-002,,,GB,consideration,pinterest,"A full-room scale view drives more qualified PDP sessions than a close crop",portee-02,sage,"D01-P-A|D01-P-B|D01-P-C",/products/portee-02,engaged_pdp_session,bounce_rate,,draft,,,
+TEST-003,,,GB,purchase,search-shopping,"Exact price and delivery framing improves checkout starts without lowering margin",seuil-01,butter,"C01-S-A|C01-S-B|C01-S-C",/products/seuil-01?finish=butter,begin_checkout,contribution_margin,,blocked,,,
+

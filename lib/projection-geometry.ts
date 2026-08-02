@@ -1,4 +1,4 @@
-import type { PlacementBox } from "@/lib/rava-content";
+import type { PlacementBox } from "@/lib/isandre/catalog";
 
 export type PixelSize = {
   width: number;

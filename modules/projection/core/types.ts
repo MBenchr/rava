@@ -4,28 +4,12 @@ import type {
   PlacementMode,
   ProductId,
   ProjectionResponsePayload,
-} from "@/lib/rava-content";
+} from "@/lib/isandre/catalog";
 
 export type PlacementTransform = {
   box: PlacementBox;
   yawDeg: number;
   floorAnchor: { x: number; y: number };
-  calibrationMmPerPixel?: number;
-};
-
-export type CalibrationMeasurement = {
-  start: { x: number; y: number };
-  end: { x: number; y: number };
-  referenceLengthMm: number;
-  mmPerPixel: number;
-};
-
-export type SceneAnalysis = {
-  version: "local-v1";
-  image: { width: number; height: number };
-  horizonY: number | null;
-  floorConfidence: number;
-  warning?: string;
 };
 
 export type ProjectionArtifact = ProjectionResponsePayload & {

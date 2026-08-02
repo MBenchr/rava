@@ -1,0 +1,6 @@
+contact_id,organisation,person,role,country,city,circle,source,lawful_basis,consent_status,priority,owner,last_contact,next_action,opt_out,status,notes
+PRESS-001,,,,GB,London,press-editorial,,legitimate-interest,not-required-for-individual-outreach,A,,,qualify,false,research,
+TRADE-001,,,,GB,London,architect-authority,,legitimate-interest,not-required-for-individual-outreach,A,,,qualify,false,research,
+CREATOR-001,,,,GB,London,interiors-creator,,contract,not-collected,B,,,qualify,false,research,
+COMMUNITY-001,,,,FR,Paris,micro-community,,consent,not-collected,C,,,qualify,false,research,
+

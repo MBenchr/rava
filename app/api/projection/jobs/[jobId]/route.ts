@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { getProjectionJob } from "@/modules/projection/jobs/projection-job-store";
+import {
+  deleteProjectionJob,
+  getProjectionJob,
+} from "@/modules/projection/jobs/projection-job-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,4 +22,14 @@ export async function GET(
   return NextResponse.json({ job }, {
     headers: { "Cache-Control": "no-store, max-age=0" },
   });
+}
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ jobId: string }> },
+) {
+  const { jobId } = await context.params;
+  deleteProjectionJob(jobId);
+
+  return new Response(null, { status: 204 });
 }

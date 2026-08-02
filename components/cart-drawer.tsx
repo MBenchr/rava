@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { PackageCheck, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useCart } from "@/components/cart-provider";
 import ExpressCheckout from "@/components/express-checkout";
@@ -13,6 +13,7 @@ import ProductIdentityPicker from "@/components/product-identity-picker";
 import QuantityStepper from "@/components/quantity-stepper";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { getContent } from "@/content";
 import { openStripeCheckout } from "@/lib/checkout-client";
 import { trackCommerceEvent } from "@/lib/commerce-events";
 import {
@@ -31,9 +32,10 @@ import {
   getSiteCopy,
   normalizeFinishForProduct,
   type Locale,
-} from "@/lib/rava-content";
+} from "@/lib/isandre/catalog";
 
 export default function CartDrawer({ locale }: { locale: Locale }) {
+  const content = getContent(locale);
   const { clearCart, closeCart, isCartOpen, items, removeItem, replaceItem, setCartOpen, setQuantity, subtotalCents, totalItems } = useCart();
   const { market, marketCode } = useMarket();
   const siteCopy = getSiteCopy(locale);
@@ -41,13 +43,27 @@ export default function CartDrawer({ locale }: { locale: Locale }) {
   const marketSubtotalCents = getMarketAmountCentsFromEur(subtotalCents, marketCode, "price");
   const shippingCents = getMarketShippingCents(marketCode);
 
+  useEffect(() => {
+    if (!isCartOpen) return;
+
+    trackCommerceEvent("view_cart", {
+      currency: market.currency,
+      value: marketSubtotalCents / 100,
+      items: items.map((item) => ({
+        item_id: item.productId,
+        item_variant: item.finishId,
+        quantity: item.quantity,
+      })),
+    });
+  }, [isCartOpen, items, market.currency, marketSubtotalCents]);
+
   async function checkout() {
     setState({ loading: true, error: null });
     try {
       trackCommerceEvent("begin_checkout", { currency: market.currency, value: marketSubtotalCents / 100, items: items.map((item) => ({ item_id: item.productId, item_variant: item.finishId, quantity: item.quantity })) });
       await openStripeCheckout({ locale, marketCode, items });
     } catch (error) {
-      setState({ loading: false, error: error instanceof Error ? error.message : "Checkout is unavailable." });
+      setState({ loading: false, error: error instanceof Error ? error.message : content.errors.checkout });
     }
   }
 
@@ -55,16 +71,16 @@ export default function CartDrawer({ locale }: { locale: Locale }) {
     <Sheet open={isCartOpen} onOpenChange={setCartOpen}>
       <SheetContent side="right" className="w-full max-w-[520px] gap-0 border-l border-border bg-card p-0">
         <SheetHeader className="border-b border-border px-5 py-6 sm:px-7">
-          <p className="eyebrow">{locale === "fr" ? "Votre sélection" : "Your selection"}</p>
-          <SheetTitle className="display-title text-5xl">{locale === "fr" ? "Le panier" : "The bag"}</SheetTitle>
-          <SheetDescription>{totalItems ? (locale === "fr" ? `${totalItems} pièce${totalItems > 1 ? "s" : ""}, fabriquée${totalItems > 1 ? "s" : ""} pour vous.` : `${totalItems} piece${totalItems > 1 ? "s" : ""}, made for you.`) : (locale === "fr" ? "Votre sélection apparaîtra ici." : "Your selection will appear here.")}</SheetDescription>
+          <p className="eyebrow">{content.common.selection}</p>
+          <SheetTitle className="display-title text-5xl">{content.commerce.bagTitle}</SheetTitle>
+          <SheetDescription>{totalItems ? `${totalItems} ${content.common.items.toLocaleLowerCase(locale)}` : content.common.emptySelection}</SheetDescription>
         </SheetHeader>
 
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-start justify-center gap-6 px-7">
-            <p className="display-title max-w-sm text-5xl">{locale === "fr" ? "Une pièce pour laisser vivre la vôtre." : "A piece that lets your room live."}</p>
-            <p className="max-w-xs text-sm leading-6 text-muted-foreground">{locale === "fr" ? "Choisissez une forme, trouvez sa finition, puis commandez directement." : "Choose a form, find its finish, then order directly."}</p>
-            <Button onClick={closeCart}>{locale === "fr" ? "Voir la collection" : "View the collection"}</Button>
+            <p className="display-title max-w-sm text-5xl">{content.commerce.bagEmptyTitle}</p>
+            <p className="max-w-xs text-sm leading-6 text-muted-foreground">{content.commerce.bagEmptyBody}</p>
+            <Button onClick={closeCart}>{content.common.viewCollection}</Button>
           </div>
         ) : (
           <>
@@ -81,19 +97,29 @@ export default function CartDrawer({ locale }: { locale: Locale }) {
                   );
                   return (
                     <article key={`${item.productId}:${item.finishId}`} className="cart-line">
-                      <div className="image-stage cart-line__hero"><Image src={image.thumbnailSrc} alt={image.alt} fill sizes="160px" unoptimized className="object-contain" /></div>
+                      <div className="image-stage cart-line__hero">
+                        <Image
+                          src={image.thumbnailSrc}
+                          alt={image.alt}
+                          width={320}
+                          height={400}
+                          sizes="160px"
+                          unoptimized
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
                       <div className="grid content-start gap-3">
                         <div><p className="text-sm font-medium">{copy.name}</p><p className="mt-1 text-xs text-muted-foreground">{getFinishLabel(item.finishId, locale)}</p></div>
                         <p className="text-sm font-medium">{formatMarketAmount(linePrice, marketCode, locale)}</p>
-                        <div className="flex items-center justify-between gap-3"><QuantityStepper value={item.quantity} onChange={(quantity) => setQuantity(item.productId, item.finishId, quantity)} locale={locale} /><button className="text-xs text-muted-foreground underline underline-offset-4" onClick={() => removeItem(item.productId, item.finishId)}>{locale === "fr" ? "Retirer" : "Remove"}</button></div>
-                        <Link href={`${getLocalizedRoute(product.id, locale)}?finish=${item.finishId}`} className="text-xs text-muted-foreground underline underline-offset-4" onClick={closeCart}>{locale === "fr" ? "Modifier" : "Edit"}</Link>
+                        <div className="flex items-center justify-between gap-3"><QuantityStepper value={item.quantity} onChange={(quantity) => setQuantity(item.productId, item.finishId, quantity)} locale={locale} /><button className="text-xs text-muted-foreground underline underline-offset-4" onClick={() => removeItem(item.productId, item.finishId)}>{content.commerce.remove}</button></div>
+                        <Link href={`${getLocalizedRoute(product.id, locale)}?finish=${item.finishId}`} className="text-xs text-muted-foreground underline underline-offset-4" onClick={closeCart}>{content.common.edit}</Link>
                       </div>
                       <details className="cart-line__details">
                         <summary>
-                          {locale === "fr" ? "Modifier la pièce ou la finition" : "Change piece or finish"}
+                          {content.common.changePieceOrFinish}
                         </summary>
                         <div className="cart-line__editor">
-                          <p className="cart-line__label">{locale === "fr" ? "Changer de pièce" : "Change piece"}</p>
+                          <p className="cart-line__label">{content.common.changePiece}</p>
                           <ProductIdentityPicker
                             compact
                             productId={item.productId}
@@ -108,7 +134,7 @@ export default function CartDrawer({ locale }: { locale: Locale }) {
                               )
                             }
                           />
-                          <p className="cart-line__label">{locale === "fr" ? "Finition" : "Finish"}</p>
+                          <p className="cart-line__label">{content.commerce.finish}</p>
                           <div className="cart-line__finishes">
                             {getAvailableFinishes(item.productId).map((finish) => (
                               <button
@@ -140,17 +166,17 @@ export default function CartDrawer({ locale }: { locale: Locale }) {
 
             <SheetFooter className="cart-drawer__footer border-t border-border p-5 sm:p-7">
               <MarketSelector locale={locale} />
-              <dl className="cart-drawer__summary"><div className="buy-row"><dt>{locale === "fr" ? "Sous-total" : "Subtotal"}</dt><dd>{formatMarketAmount(marketSubtotalCents, marketCode, locale)}</dd></div><div className="buy-row cart-drawer__production"><dt>{locale === "fr" ? "Fabrication" : "Production"}</dt><dd>{siteCopy.fabricationDelay}</dd></div><div className="buy-row"><dt>{locale === "fr" ? "Livraison" : "Delivery"}</dt><dd>{formatMarketAmount(shippingCents, marketCode, locale)}</dd></div></dl>
+              <dl className="cart-drawer__summary"><div className="buy-row"><dt>{content.commerce.subtotal}</dt><dd>{formatMarketAmount(marketSubtotalCents, marketCode, locale)}</dd></div><div className="buy-row cart-drawer__production"><dt>{content.common.production}</dt><dd>{siteCopy.fabricationDelay}</dd></div><div className="buy-row"><dt>{content.common.delivery}</dt><dd>{formatMarketAmount(shippingCents, marketCode, locale)}</dd></div></dl>
               <div className="cart-drawer__trust grid grid-cols-2 gap-2">
                 <div className="flex items-start gap-2 bg-secondary p-3 text-xs leading-5 text-muted-foreground"><PackageCheck className="mt-0.5 size-4 shrink-0 text-foreground" />{locale === "fr" ? "Suivi du studio jusqu’à l’arrivée." : "Studio follow-up through arrival."}</div>
                 <div className="flex items-start gap-2 bg-secondary p-3 text-xs leading-5 text-muted-foreground"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-foreground" />{locale === "fr" ? "Paiement sécurisé par Stripe." : "Secure payment by Stripe."}</div>
               </div>
               <ExpressCheckout items={items} locale={locale} marketCode={marketCode} />
-              <div className="checkout-divider"><span>{locale === "fr" ? "ou" : "or"}</span></div>
+              <div className="checkout-divider"><span>{content.common.or}</span></div>
               {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
-              <Button size="lg" className="justify-between" onClick={checkout} disabled={state.loading}><span>{state.loading ? (locale === "fr" ? "Ouverture du paiement…" : "Opening checkout…") : (locale === "fr" ? "Continuer avec Stripe" : "Continue with Stripe")}</span><span>{formatMarketAmount(marketSubtotalCents, marketCode, locale)}</span></Button>
-              <p className="cart-drawer__payment-note text-center text-xs leading-5 text-muted-foreground">{locale === "fr" ? "Les moyens de paiement disponibles sont affichés par Stripe selon votre pays et votre éligibilité." : "Stripe shows the payment methods available for your country and eligibility."}</p>
-              <button type="button" className="text-xs text-muted-foreground underline underline-offset-4" onClick={() => { clearCart(); setState({ loading: false, error: null }); }}>{locale === "fr" ? "Vider le panier" : "Clear bag"}</button>
+              <Button size="lg" className="justify-between" onClick={checkout} disabled={state.loading}><span>{state.loading ? content.common.opening : content.commerce.checkout}</span><span>{formatMarketAmount(marketSubtotalCents, marketCode, locale)}</span></Button>
+              <p className="cart-drawer__payment-note text-center text-xs leading-5 text-muted-foreground">{content.common.stripePaymentMethodsNote}</p>
+              <button type="button" className="text-xs text-muted-foreground underline underline-offset-4" onClick={() => { clearCart(); setState({ loading: false, error: null }); }}>{content.common.clearBag}</button>
             </SheetFooter>
           </>
         )}

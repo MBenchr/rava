@@ -3,7 +3,7 @@
 import { Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { Locale } from "@/lib/rava-content";
+import type { Locale } from "@/lib/isandre/catalog";
 import { cn } from "@/lib/utils";
 
 type QuantityStepperProps = {

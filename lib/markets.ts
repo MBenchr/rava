@@ -1,4 +1,4 @@
-import type { Locale } from "@/lib/rava-content";
+import type { Locale } from "@/lib/isandre/catalog";
 
 export const marketCodes = [
   "FR",

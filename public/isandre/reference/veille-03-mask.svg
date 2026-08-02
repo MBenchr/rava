@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 383 620" fill="none">
+  <defs>
+    <mask id="veille03-cutout-mask">
+      <rect width="383" height="620" fill="black"/>
+      <rect width="383" height="570" rx="52" fill="white"/>
+      <path d="M80 330V172a112 112 0 0 1 112-112h0a111 111 0 0 1 111 111v159Z" fill="black"/>
+      <rect x="80" y="400" width="223" height="120" rx="55" fill="black"/>
+      <rect x="20" y="570" width="343" height="50" rx="20" fill="white"/>
+    </mask>
+  </defs>
+  <rect width="383" height="620" fill="#ffffff" mask="url(#veille03-cutout-mask)"/>
+</svg>

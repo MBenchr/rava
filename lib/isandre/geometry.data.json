@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 3,
+  "kits": {
+    "seuil-01": {
+      "id": "seuil-01",
+      "version": "2026.07.27-1",
+      "status": "approved",
+      "dimensionsMm": { "width": 1020, "height": 1840, "depth": 420 },
+      "outerRadiusMm": 52,
+      "wallThicknessMm": 80,
+      "plinth": { "heightMm": 100, "recessMm": 25 },
+      "openings": [
+        { "id": "left-1", "kind": "rounded-rect", "x": 80, "y": 80, "width": 230, "height": 355, "radius": 65 },
+        { "id": "left-2", "kind": "rounded-rect", "x": 80, "y": 515, "width": 230, "height": 355, "radius": 65 },
+        { "id": "left-3", "kind": "rounded-rect", "x": 80, "y": 950, "width": 230, "height": 355, "radius": 65 },
+        { "id": "left-4", "kind": "rounded-rect", "x": 80, "y": 1385, "width": 230, "height": 355, "radius": 65 },
+        { "id": "arch", "kind": "arch", "x": 390, "y": 80, "width": 550, "height": 540, "radius": 170, "shoulderY": 250 },
+        { "id": "right-1", "kind": "rounded-rect", "x": 390, "y": 690, "width": 550, "height": 230, "radius": 65 },
+        { "id": "right-2", "kind": "rounded-rect", "x": 390, "y": 990, "width": 550, "height": 230, "radius": 65 },
+        { "id": "right-3", "kind": "rounded-rect", "x": 390, "y": 1290, "width": 550, "height": 450, "radius": 70 }
+      ],
+      "maskPath": "/isandre/reference/seuil-01-mask.svg",
+      "sourceReference": "/isandre/media/seuil-01/c01/chalk/index.webp"
+    },
+    "portee-02": {
+      "id": "portee-02",
+      "version": "2026.07.27-1",
+      "status": "approved",
+      "dimensionsMm": { "width": 1840, "height": 1020, "depth": 420 },
+      "outerRadiusMm": 52,
+      "wallThicknessMm": 80,
+      "plinth": { "heightMm": 100, "recessMm": 25 },
+      "openings": [
+        { "id": "left-1", "kind": "rounded-rect", "x": 80, "y": 80, "width": 300, "height": 227, "radius": 60 },
+        { "id": "left-2", "kind": "rounded-rect", "x": 80, "y": 387, "width": 300, "height": 227, "radius": 60 },
+        { "id": "left-3", "kind": "rounded-rect", "x": 80, "y": 694, "width": 300, "height": 226, "radius": 60 },
+        { "id": "arch", "kind": "arch", "x": 460, "y": 80, "width": 580, "height": 440, "radius": 145, "shoulderY": 225 },
+        { "id": "centre-low", "kind": "rounded-rect", "x": 460, "y": 600, "width": 580, "height": 320, "radius": 65 },
+        { "id": "right-1", "kind": "rounded-rect", "x": 1120, "y": 80, "width": 640, "height": 200, "radius": 60 },
+        { "id": "right-2", "kind": "rounded-rect", "x": 1120, "y": 360, "width": 640, "height": 200, "radius": 60 },
+        { "id": "right-3", "kind": "rounded-rect", "x": 1120, "y": 640, "width": 640, "height": 280, "radius": 65 }
+      ],
+      "maskPath": "/isandre/reference/portee-02-mask.svg",
+      "sourceReference": "/isandre/media/portee-02/c01/chalk/index.webp"
+    },
+    "veille-03": {
+      "id": "veille-03",
+      "version": "2026.08.01-design-1",
+      "status": "design-frozen",
+      "validationNote": "Design baseline approved for calibrated visualisation and 3D reconstruction; physical tooling remains subject to manufacturer drawing and prototype approval.",
+      "dimensionsMm": { "width": 383, "height": 620, "depth": 420 },
+      "outerRadiusMm": 52,
+      "wallThicknessMm": 80,
+      "plinth": { "heightMm": 50, "recessMm": 20 },
+      "openings": [
+        { "id": "upper", "kind": "arch", "x": 80, "y": 60, "width": 223, "height": 270, "radius": 112, "shoulderY": 172 },
+        { "id": "lower", "kind": "rounded-rect", "x": 80, "y": 400, "width": 223, "height": 120, "radius": 55 }
+      ],
+      "maskPath": "/isandre/reference/veille-03-mask.svg",
+      "sourceReference": "/isandre/media/veille-03/c01/chalk/index.webp"
+    }
+  }
+}

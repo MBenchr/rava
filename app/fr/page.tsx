@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 
-import StorefrontExperience from "@/components/rava-experience";
-import { isFinishId, isProductId, normalizeFinishForProduct } from "@/lib/rava-content";
-import { buildHomeStructuredData } from "@/lib/rava-schema";
+import StorefrontExperience from "@/components/storefront-experience";
+import {
+  localizedSiteCopy,
+  normalizeFinishForProduct,
+  normalizeFinishId,
+  normalizeProductId,
+} from "@/lib/isandre/catalog";
+import { buildHomeStructuredData } from "@/lib/isandre/structured-data";
 
 export const metadata: Metadata = {
-  title: "Des meubles qui ouvrent la pièce",
-  description: "Des meubles sculpturaux ouverts, dessinés en France et fabriqués sur commande.",
+  title: localizedSiteCopy.fr.title,
+  description: localizedSiteCopy.fr.description,
   alternates: { canonical: "/fr", languages: { "en-GB": "/", "fr-FR": "/fr", "x-default": "/" } },
 };
 
@@ -16,8 +21,8 @@ export default async function FrenchHome({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const rawProduct = Array.isArray(params.product) ? params.product[0] : params.product;
   const rawFinish = Array.isArray(params.finish) ? params.finish[0] : params.finish;
-  const productId = rawProduct && isProductId(rawProduct) ? rawProduct : "elan-o1";
-  const finishId = rawFinish && isFinishId(rawFinish) ? rawFinish : "chalk";
+  const productId = normalizeProductId(rawProduct) ?? "seuil-01";
+  const finishId = normalizeFinishId(rawFinish) ?? "chalk";
 
   return (
     <>

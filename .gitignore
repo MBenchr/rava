@@ -1,8 +1,11 @@
 node_modules
 .next
+.next-qa
 out
 dist
 output
+outputs
+tmp
 test-results
 playwright-report
 .DS_Store

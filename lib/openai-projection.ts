@@ -12,7 +12,7 @@ import {
   type PlacementBox,
   type PlacementMode,
   type ProductId,
-} from "@/lib/rava-content";
+} from "@/lib/isandre/catalog";
 import {
   getContainRect,
   getNormalizedBoxAspect,
@@ -25,7 +25,7 @@ import type { ProjectionArtifact } from "@/modules/projection/core/types";
 
 const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 const MAX_EDGE = 1280;
-const PROMPT_VERSION = "single-reference-room-edit-v1";
+export const PROJECTION_PROMPT_VERSION = "single-reference-room-edit-v2";
 
 export type ProjectionProgressStage = "preparing" | "generating";
 
@@ -287,7 +287,7 @@ function placementInstruction(mode: PlacementMode) {
   return "The product stands naturally against the nearest wall or beside the selected furniture.";
 }
 
-function buildPrompt(input: {
+export function buildProjectionPrompt(input: {
   productId: ProductId;
   finishId: FinishId;
   placementMode: PlacementMode;
@@ -361,7 +361,7 @@ export async function generateProjection(input: GenerateProjectionInput): Promis
   const productReference = await prepareProductReference(
     product.finishes[input.finishId].packshot.src,
   );
-  const prompt = buildPrompt({
+  const prompt = buildProjectionPrompt({
     productId: input.productId,
     finishId: input.finishId,
     placementMode: input.placementMode,
@@ -402,7 +402,7 @@ export async function generateProjection(input: GenerateProjectionInput): Promis
     finishId: input.finishId,
     placementBox: sourceBox,
     referenceKitVersion: "official-finish-photo-v1",
-    promptVersion: PROMPT_VERSION,
+    promptVersion: PROJECTION_PROMPT_VERSION,
     rendererVersion: "single-reference-openai-v1",
   };
 }

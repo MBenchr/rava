@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm" viewBox="0 0 210 297" role="img" aria-labelledby="title desc">
+  <title id="title">ISANDRE certificate of authenticity</title>
+  <desc id="desc">A4 certificate prototype.</desc>
+  <rect width="210" height="297" fill="#F4EFE6"/>
+  <path d="M0 0H100V79.1H66V113.1H100V155H0Z" transform="translate(20 21) scale(.12)" fill="#1B1917"/>
+  <text x="44" y="32" font-family="Arial, Helvetica, sans-serif" fill="#1B1917" font-size="5.8" letter-spacing="1.8">ISANDRE</text>
+  <path d="M20 48H190" stroke="#C9C0B2" stroke-width=".35"/>
+  <text x="20" y="82" font-family="Georgia, serif" fill="#1B1917" font-size="15">Certificate of authenticity</text>
+  <text x="20" y="101" font-family="Arial, Helvetica, sans-serif" fill="#6D5B4B" font-size="3.2" letter-spacing=".9">ṬĀQA · SEUIL 01 · CHALK</text>
+  <text x="20" y="126" font-family="Arial, Helvetica, sans-serif" fill="#1B1917" font-size="5">NO 000127</text>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#6D5B4B" font-size="3.1">
+    <text x="20" y="153">DESIGN · MOHYI BENCHRIH</text>
+    <text x="20" y="165">DATE · ____ / ____ / ________</text>
+    <text x="20" y="177">BATCH · ______________________________</text>
+    <text x="20" y="189">PRODUCTION SITE · ____________________</text>
+    <text x="20" y="201">QUALITY CONTROL · ____________________</text>
+  </g>
+  <path d="M20 225H92M118 225H190" stroke="#C9C0B2" stroke-width=".35"/>
+  <text x="20" y="232" font-family="Arial, Helvetica, sans-serif" fill="#6D5B4B" font-size="2.6">ISANDRE quality control</text>
+  <text x="118" y="232" font-family="Arial, Helvetica, sans-serif" fill="#6D5B4B" font-size="2.6">Owner</text>
+  <text x="20" y="272" font-family="Arial, Helvetica, sans-serif" fill="#6D5B4B" font-size="2.35">Prototype document. Manufacturing origin and production-site data must match the physical piece.</text>
+</svg>

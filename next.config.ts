@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Keep production QA isolated from a concurrently running local dev server.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
   allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.129.10"],
   images: {
@@ -9,7 +11,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/viaire/:path*",
+        source: "/isandre/:path*",
         headers: [
           {
             key: "Cache-Control",
@@ -32,21 +34,26 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      { source: "/mura-01", destination: "/products/seuil", statusCode: 301 },
-      { source: "/mura-02", destination: "/products/portee", statusCode: 301 },
-      { source: "/mura-04", destination: "/products/veille", statusCode: 301 },
-      { source: "/products/elan-o1", destination: "/products/seuil", statusCode: 301 },
-      { source: "/products/portee-o2", destination: "/products/portee", statusCode: 301 },
-      { source: "/products/veille-o4", destination: "/products/veille", statusCode: 301 },
-      { source: "/products/seuil-01", destination: "/products/seuil", statusCode: 301 },
-      { source: "/products/horizon-02", destination: "/products/portee", statusCode: 301 },
-      { source: "/products/aube-04", destination: "/products/veille", statusCode: 301 },
-      { source: "/fr/products/elan-o1", destination: "/fr/products/seuil", statusCode: 301 },
-      { source: "/fr/products/portee-o2", destination: "/fr/products/portee", statusCode: 301 },
-      { source: "/fr/products/veille-o4", destination: "/fr/products/veille", statusCode: 301 },
-      { source: "/fr/products/seuil-01", destination: "/fr/products/seuil", statusCode: 301 },
-      { source: "/fr/products/horizon-02", destination: "/fr/products/portee", statusCode: 301 },
-      { source: "/fr/products/aube-04", destination: "/fr/products/veille", statusCode: 301 },
+      { source: "/mura-01", destination: "/products/seuil-01", statusCode: 301 },
+      { source: "/mura-02", destination: "/products/portee-02", statusCode: 301 },
+      { source: "/mura-04", destination: "/products/veille-03", statusCode: 301 },
+      { source: "/products/elan-o1", destination: "/products/seuil-01", statusCode: 301 },
+      { source: "/products/portee-o2", destination: "/products/portee-02", statusCode: 301 },
+      { source: "/products/veille-o4", destination: "/products/veille-03", statusCode: 301 },
+      { source: "/products/seuil", destination: "/products/seuil-01", statusCode: 301 },
+      { source: "/products/portee", destination: "/products/portee-02", statusCode: 301 },
+      { source: "/products/veille", destination: "/products/veille-03", statusCode: 301 },
+      { source: "/products/horizon-02", destination: "/products/portee-02", statusCode: 301 },
+      { source: "/products/aube-04", destination: "/products/veille-03", statusCode: 301 },
+      { source: "/fr/products/elan-o1", destination: "/fr/produits/seuil-01", statusCode: 301 },
+      { source: "/fr/products/portee-o2", destination: "/fr/produits/portee-02", statusCode: 301 },
+      { source: "/fr/products/veille-o4", destination: "/fr/produits/veille-03", statusCode: 301 },
+      { source: "/fr/products/seuil", destination: "/fr/produits/seuil-01", statusCode: 301 },
+      { source: "/fr/products/portee", destination: "/fr/produits/portee-02", statusCode: 301 },
+      { source: "/fr/products/veille", destination: "/fr/produits/veille-03", statusCode: 301 },
+      { source: "/fr/products/seuil-01", destination: "/fr/produits/seuil-01", statusCode: 301 },
+      { source: "/fr/products/horizon-02", destination: "/fr/produits/portee-02", statusCode: 301 },
+      { source: "/fr/products/aube-04", destination: "/fr/produits/veille-03", statusCode: 301 },
     ];
   },
 };

@@ -188,3 +188,16 @@ export function getProjectionJob(id: string) {
   const job = registry.jobs.get(id);
   return job ? publicJob(job) : null;
 }
+
+export function deleteProjectionJob(id: string) {
+  const job = registry.jobs.get(id);
+
+  if (!job) {
+    return false;
+  }
+
+  registry.jobs.delete(id);
+  registry.fingerprints.delete(job.fingerprint);
+
+  return true;
+}

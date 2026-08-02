@@ -4,7 +4,7 @@ import { Globe2 } from "lucide-react";
 
 import { useMarket } from "@/components/market-provider";
 import { marketList } from "@/lib/markets";
-import type { Locale } from "@/lib/rava-content";
+import type { Locale } from "@/lib/isandre/catalog";
 
 type MarketSelectorProps = {
   locale: Locale;

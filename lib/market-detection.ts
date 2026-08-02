@@ -3,10 +3,10 @@ import {
   isMarketCode,
   type MarketCode,
 } from "@/lib/markets";
-import type { Locale } from "@/lib/rava-content";
+import type { Locale } from "@/lib/isandre/catalog";
 
 const COUNTRY_HEADERS = [
-  "x-viaire-country",
+  "x-isandre-country",
   "cf-ipcountry",
   "x-vercel-ip-country",
   "x-country-code",

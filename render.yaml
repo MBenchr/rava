@@ -1,26 +1,58 @@
 services:
   - type: web
-    name: viaire
+    name: isandre-storefront
     runtime: node
     plan: free
     repo: https://github.com/MBenchr/rava
     branch: main
-    autoDeploy: true
-    healthCheckPath: /
+    autoDeploy: false
+    healthCheckPath: /api/health
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start -- --hostname 0.0.0.0 --port $PORT
     envVars:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_SITE_URL
-        value: https://rava-qt9q.onrender.com
+        sync: false
+      - key: NEXT_PUBLIC_CONTACT_EMAIL
+        sync: false
+      - key: CATALOG_RELEASED
+        value: "false"
+      - key: ALLOW_VOLATILE_ORDER_STORE
+        value: "false"
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_IMAGE_MODEL
+        value: gpt-image-2
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_PUBLISHABLE_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      - key: STRIPE_PAYMENT_METHOD_CONFIGURATION_ID
+        sync: false
+      - key: STRIPE_TAX_CODE_FURNITURE
+        sync: false
+      - key: STRIPE_TAX_HEAD_OFFICE_LINE1
+        sync: false
+      - key: STRIPE_TAX_HEAD_OFFICE_LINE2
+        sync: false
+      - key: STRIPE_TAX_HEAD_OFFICE_CITY
+        sync: false
+      - key: STRIPE_TAX_HEAD_OFFICE_POSTAL_CODE
+        sync: false
+      - key: STRIPE_TAX_HEAD_OFFICE_STATE
+        sync: false
+      - key: STRIPE_TAX_HEAD_OFFICE_COUNTRY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
       - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+      - key: ORDER_NOTIFICATION_EMAIL
         sync: false

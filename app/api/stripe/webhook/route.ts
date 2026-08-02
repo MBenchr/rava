@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
-import { sendOrderConfirmations } from "@/lib/order-confirmation";
+import { processPaidCheckoutEvent } from "@/lib/orders/service";
 import { getServerEnv } from "@/lib/server-env";
 import { getStripeClient } from "@/lib/stripe";
 
@@ -26,9 +26,9 @@ export async function POST(request: Request) {
         eventSession.payment_status === "no_payment_required"
       ) {
         const session = await stripe.checkout.sessions.retrieve(eventSession.id, {
-          expand: ["line_items"],
+          expand: ["line_items.data.price.product"],
         });
-        await sendOrderConfirmations(event.id, session);
+        await processPaidCheckoutEvent(event.id, event.type, session);
       }
     }
 

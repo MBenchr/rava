@@ -1,97 +1,122 @@
-# VIAIRE
+# ISANDRE / ṬĀQA
 
-International storefront and exact product-projection engine for VIAIRE.
+Boutique internationale Next.js pour la maison ISANDRE et sa collection
+ṬĀQA. Le site public est bilingue, piloté par un catalogue serveur canonique,
+et prépare Stripe Checkout, la projection OpenAI, les confirmations de
+commande, les passeports produit et Merchant Center sans publier de preuve ou
+d'offre non validée.
 
-## Stack
+## Architecture
 
-- Next.js 16
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- Three.js for offline metric reference-kit generation only
-- Stripe Checkout
-- OpenAI image integration
+- `lib/isandre/` : identité, catalogue, géométrie, médias, industrie et SEO.
+- `content/` : deck éditorial anglais et français.
+- `public/isandre/media/manifest.json` : registre des médias publiables.
+- `lib/orders/` : projection canonique des commandes Stripe.
+- `modules/projection/` : placement, jobs et intégration photographique OpenAI.
+- `docs/execution/` : décisions, preuves de recette et blocages humains.
+- `docs/research/plan-maitre-final-isandre-taqa.md` : plan directeur.
 
-## Canonical Assets
+Règle d'architecture : le catalogue décide, les services calculent et les
+composants rendent. Le navigateur ne fournit jamais un prix faisant autorité.
 
-- `assets/viaire-visuals-source/final/`: complete coherent source photographs for every product and finish
-- `public/viaire/`: optimized storefront images generated from the new masters
-- `modules/projection/core/reference-kits.data.json`: canonical product dimensions and openings
-- `public/projection-kits/`: exact GLB, USDZ and identity-board outputs
-
-The storefront must not read images from any legacy RAVA, MURA or TRAVERSÉE directory.
-
-## Commands
+## Développement local
 
 ```bash
 npm install
-npm run assets:storefront
-npm run projection:kits
-npm run dev
+npm run dev -- --hostname 0.0.0.0 --port 3010
 ```
 
-Validation:
+Recette de production isolée d'un éventuel serveur de développement :
 
 ```bash
-npm run lint
-npm run typecheck
+npm run build:qa
+npm run start:qa -- --hostname 0.0.0.0 --port 3012
+```
+
+## Validation
+
+```bash
+npm run brand:verify
+npm run content:verify
+npm run industrial:verify
+npm run media:pilots:verify
+npm run media:verify
 npm run projection:verify
 npm run projection:contract:verify
 npm run projection:errors:verify
-npm run projection:openai:verify
-npm run test:e2e
-npm run build
+npm run markets:verify
+npm run checkout:verify
+npm run orders:verify
+npm run passports:verify
+npm run seo:verify
+npm run launch:verify
+npm run accessibility:verify
+npm run typecheck
+npm run lint
+npm run build:qa
 ```
 
-## Environment
+Puis, avec le serveur QA démarré sur le port `3012` :
 
-Runtime secrets are loaded from the environment. Required integrations use:
+```bash
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3012 npm run test:e2e -- --workers=1
+PERFORMANCE_BASE_URL=http://127.0.0.1:3012 npm run performance:verify
+QA_BASE_URL=http://127.0.0.1:3012 npm run qa:screenshots
+```
+
+Les scripts de construction média ne doivent être lancés que pour régénérer
+les dérivés depuis les sources A7 approuvées :
+
+```bash
+npm run media:build
+npm run media:qa:boards
+```
+
+## Variables d'environnement
+
+Les secrets restent exclusivement côté serveur :
 
 - `OPENAI_API_KEY`
-- `OPENAI_IMAGE_MODEL` (optional, defaults to `gpt-image-2`)
-- `OPENAI_VISION_MODEL` (optional, defaults to `gpt-5-mini`)
+- `OPENAI_IMAGE_MODEL` (optionnel, défaut `gpt-image-2`)
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `RESEND_API_KEY`
 - `RESEND_FROM`
+- `ORDER_NOTIFICATION_EMAIL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_SITE_URL`
 
-Stripe Tax also requires a real business address. Define:
+La configuration Stripe Tax utilise également :
 
 - `STRIPE_TAX_HEAD_OFFICE_LINE1`
+- `STRIPE_TAX_HEAD_OFFICE_LINE2` (optionnel)
 - `STRIPE_TAX_HEAD_OFFICE_CITY`
 - `STRIPE_TAX_HEAD_OFFICE_POSTAL_CODE`
 - `STRIPE_TAX_HEAD_OFFICE_COUNTRY`
-- `STRIPE_TAX_HEAD_OFFICE_LINE2` (optional)
-- `STRIPE_TAX_HEAD_OFFICE_STATE` (optional)
-- `STRIPE_TAX_CODE_FURNITURE` (optional)
+- `STRIPE_TAX_HEAD_OFFICE_STATE` (optionnel)
+- `STRIPE_TAX_CODE_FURNITURE` (optionnel)
 
-Then configure the active Stripe mode without exposing the address:
+Le fichier `.env.example` documente les options sans contenir de secret.
 
-```bash
-npm run stripe:tax:configure
-```
+## Publication
 
-Stripe must have Apple Pay, Google Pay, Link, PayPal and Klarna enabled for the
-relevant countries. Stripe only displays methods supported by the current
-browser, currency, country and customer eligibility. Register the final HTTPS
-domain in both Stripe test mode and live mode.
+`CATALOG_RELEASED` reste désactivé tant que les portes juridiques,
+industrielles, visuelles, fiscales et logistiques du registre
+`docs/execution/blockers.md` ne sont pas levées. Avant libération :
 
-The projection route deliberately fails instead of returning an unverified
-image when the OpenAI account has no image-generation credit or when the
-geometry quality gate rejects the result.
+- `robots.txt` bloque l'indexation ;
+- le sitemap commercial est vide ;
+- Merchant Center répond `404` ;
+- aucune donnée structurée `Offer` n'est exposée ;
+- le checkout live n'est pas présenté comme disponible.
 
-`npm run projection:openai:verify` checks model access without printing the API
-key. A `PROJECTION_BILLING` result means the key is recognized but the OpenAI
-project needs active billing or available credits before live room views can
-be generated.
+Les routes historiques RAVA, MURA, FORME OUVERTE et VIAIRE sont uniquement des
+frontières de redirection ou d'archive. Aucun ancien nom ni ancien média ne
+doit être rendu dans l'interface publique canonique.
 
-## Markets
-
-The storefront exposes 30 curated delivery markets. Product prices use fixed,
-rounded commercial anchors per market, derived from the canonical EUR catalog
-but protected from exchange-rate drift. For example, the EUR 3,000 base piece
-is CHF 3,000 in Switzerland. Delivery remains tiered from EUR 60 to EUR 90
-before local-currency rounding. Stripe Checkout collects the delivery address,
-calculates tax and localizes payment methods.
+Le Blueprint `render.yaml` est préparé avec `autoDeploy: false` et
+`CATALOG_RELEASED=false`. Il ne constitue pas une autorisation de publication.
+La procédure et les preuves nécessaires sont détaillées dans
+`docs/operations/deployment-readiness.md`.

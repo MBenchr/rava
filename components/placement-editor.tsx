@@ -12,7 +12,7 @@ import {
   type Locale,
   type PlacementBox,
   type ProductId,
-} from "@/lib/rava-content";
+} from "@/lib/isandre/catalog";
 import {
   getContainRect,
   getNormalizedBoxAspect,

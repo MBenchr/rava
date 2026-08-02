@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-07-29",
+  "status": "preproduction-visualisation",
+  "disclosure": {
+    "en": "Pre-production visualisation",
+    "fr": "Visualisation de préproduction"
+  },
+  "proofPolicy": "These generated images explain intended manufacturing and material direction. They are not evidence of a supplier, workshop, artisan, prototype, origin, test or completed production.",
+  "originDirection": {
+    "design": "France",
+    "manufacturing": "Italy",
+    "status": "user-confirmed-commercial-direction",
+    "proofGate": "H-006"
+  },
+  "assets": [
+    {
+      "id": "W01",
+      "productId": "seuil-01",
+      "title": "Mould preparation",
+      "slug": "w01-seuil-mould-preparation",
+      "ratio": "3:2",
+      "output": "media/preproduction-workshop/w01-seuil-mould-preparation.png",
+      "alt": {
+        "en": "Pre-production visualisation of the aluminium mould preparation planned for SEUIL 01.",
+        "fr": "Visualisation de préproduction de la préparation du moule aluminium prévue pour SEUIL 01."
+      },
+      "caption": {
+        "en": "Preparing the aluminium mould before rotational moulding.",
+        "fr": "Préparation du moule aluminium avant rotomoulage."
+      },
+      "status": "approved-visualisation"
+    },
+    {
+      "id": "W02",
+      "productId": "portee-02",
+      "title": "Cooling and demoulding",
+      "slug": "w02-portee-demoulding",
+      "ratio": "3:2",
+      "output": "media/preproduction-workshop/w02-portee-demoulding.png",
+      "alt": {
+        "en": "Pre-production visualisation of PORTÉE 02 during cooling and demoulding.",
+        "fr": "Visualisation de préproduction de PORTÉE 02 pendant son refroidissement et son démoulage."
+      },
+      "caption": {
+        "en": "Cooling and demoulding the single-piece open form.",
+        "fr": "Refroidissement et démoulage de la forme ouverte monobloc."
+      },
+      "status": "approved-visualisation"
+    },
+    {
+      "id": "W03",
+      "productId": "seuil-01",
+      "title": "Surface and geometry inspection",
+      "slug": "w03-seuil-quality-control",
+      "ratio": "4:5",
+      "output": "media/preproduction-workshop/w03-seuil-quality-control.png",
+      "alt": {
+        "en": "Pre-production visualisation of the planned surface and geometry inspection for SEUIL 01.",
+        "fr": "Visualisation de préproduction du contrôle de surface et de géométrie prévu pour SEUIL 01."
+      },
+      "caption": {
+        "en": "Inspecting radii, continuity and the low-sheen surface.",
+        "fr": "Contrôle des rayons, de la continuité et de la surface satinée mate."
+      },
+      "status": "approved-visualisation"
+    },
+    {
+      "id": "W04",
+      "productId": null,
+      "title": "Finish coupons and colour control",
+      "slug": "w04-finish-coupons",
+      "ratio": "4:5",
+      "output": "media/preproduction-workshop/w04-finish-coupons.png",
+      "alt": {
+        "en": "Pre-production visualisation of four standard LLDPE finish coupons under controlled light.",
+        "fr": "Visualisation de préproduction de quatre coupons de finition LLDPE sous lumière contrôlée."
+      },
+      "caption": {
+        "en": "Comparing Chalk, Butter, Sage and Rose Clay under controlled light.",
+        "fr": "Comparaison de Craie, Beurre, Sauge et Argile rose sous lumière contrôlée."
+      },
+      "status": "approved-visualisation"
+    },
+    {
+      "id": "W05",
+      "productId": "veille-03",
+      "title": "VEILLE demoulding",
+      "slug": "w05-veille-demoulding",
+      "ratio": "3:2",
+      "output": "media/preproduction-workshop/w05-veille-demoulding.png",
+      "alt": {
+        "en": "Workshop visualisation of VEILLE 03 after demoulding on a worn inspection bench.",
+        "fr": "Visualisation d’atelier de VEILLE 03 après démoulage sur un établi d’inspection patiné."
+      },
+      "caption": {
+        "en": "The compact form is released, cooled and checked as a single piece.",
+        "fr": "La forme compacte est libérée, refroidie et contrôlée d’un seul tenant."
+      },
+      "status": "approved-visualisation"
+    },
+    {
+      "id": "W06",
+      "productId": "veille-03",
+      "title": "VEILLE hand finishing",
+      "slug": "w06-veille-hand-finishing",
+      "ratio": "4:5",
+      "output": "media/preproduction-workshop/w06-veille-hand-finishing.png",
+      "alt": {
+        "en": "Workshop visualisation of a craftsperson hand-finishing the upper opening of VEILLE 03 in Butter.",
+        "fr": "Visualisation d’atelier d’une artisane finalisant à la main l’ouverture supérieure de VEILLE 03 en Beurre."
+      },
+      "caption": {
+        "en": "Edges and radii are finished by hand until the surface reads as one continuous gesture.",
+        "fr": "Arêtes et rayons sont finalisés à la main jusqu’à former un geste continu."
+      },
+      "status": "approved-visualisation"
+    },
+    {
+      "id": "W07",
+      "productId": "portee-02",
+      "title": "PORTÉE opening finish",
+      "slug": "w07-portee-opening-finish",
+      "ratio": "3:2",
+      "output": "media/preproduction-workshop/w07-portee-opening-finish.png",
+      "alt": {
+        "en": "Workshop visualisation of PORTÉE 02 in Sage during the finishing of its central arch.",
+        "fr": "Visualisation d’atelier de PORTÉE 02 en Sauge pendant la finition de son arche centrale."
+      },
+      "caption": {
+        "en": "The central opening is refined by hand while the complete geometry remains visible.",
+        "fr": "L’ouverture centrale est reprise à la main tandis que la géométrie complète reste lisible."
+      },
+      "status": "approved-visualisation"
+    }
+  ]
+}

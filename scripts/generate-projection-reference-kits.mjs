@@ -9,12 +9,12 @@ import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { USDZExporter } from "three/examples/jsm/exporters/USDZExporter.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const dataPath = join(root, "modules/projection/core/reference-kits.data.json");
+const dataPath = join(root, "lib/isandre/geometry.data.json");
 const data = JSON.parse(await readFile(dataPath, "utf8"));
 const publicProductNames = {
-  "elan-o1": "SEUIL",
-  "portee-o2": "PORTÉE",
-  "veille-o4": "VEILLE",
+  "seuil-01": "SEUIL 01",
+  "portee-02": "PORTÉE 02",
+  "veille-03": "VEILLE 03",
 };
 
 class NodeFileReader {
@@ -122,74 +122,113 @@ function buildShape(kit) {
   return geometry;
 }
 
-function openingSvg(opening) {
-  if (opening.kind === "rounded-rect") {
-    return `<rect x="${opening.x}" y="${opening.y}" width="${opening.width}" height="${opening.height}" rx="${opening.radius}" fill="black"/>`;
-  }
+const viewAngles = {
+  front: 0,
+  right: -Math.PI / 6,
+  rear: (5 * Math.PI) / 6,
+};
 
-  const x1 = opening.x;
-  const x2 = opening.x + opening.width;
-  const y1 = opening.y;
-  const y2 = opening.y + opening.height;
-  const shoulder = opening.shoulderY;
-  const leftCrownX = x1 + opening.radius;
-  const rightCrownX = x2 - opening.radius;
+function rotateAroundY(point, angle) {
+  const cosine = Math.cos(angle);
+  const sine = Math.sin(angle);
 
-  return `<path d="M${x1} ${y2}V${shoulder}C${x1} ${y1 + 76} ${leftCrownX - 94} ${y1} ${leftCrownX} ${y1}H${rightCrownX}C${rightCrownX + 94} ${y1} ${x2} ${y1 + 76} ${x2} ${shoulder}V${y2}Z" fill="black"/>`;
+  return {
+    x: point.x * cosine + point.z * sine,
+    y: point.y,
+    z: -point.x * sine + point.z * cosine,
+  };
 }
 
-function productGroup(kit, { fill = "#e5e0d5", suffix = "front" } = {}) {
-  const { width, height } = kit.dimensionsMm;
-  return `<g>
-    <defs>
-      <filter id="shadow-${suffix}" x="-30%" y="-30%" width="160%" height="170%">
-        <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#141512" flood-opacity="0.18"/>
-      </filter>
-      <mask id="shape-${suffix}">
-        <rect width="${width}" height="${height}" fill="black"/>
-        <rect width="${width}" height="${height}" rx="${kit.outerRadiusMm}" fill="white"/>
-        ${kit.openings.map(openingSvg).join("\n")}
-      </mask>
-      <linearGradient id="face-${suffix}" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#f7f4ec"/>
-        <stop offset="0.48" stop-color="${fill}"/>
-        <stop offset="1" stop-color="#cfc8ba"/>
-      </linearGradient>
-    </defs>
-    <rect width="${width}" height="${height}" rx="${kit.outerRadiusMm}" fill="url(#face-${suffix})" mask="url(#shape-${suffix})" filter="url(#shadow-${suffix})"/>
-  </g>`;
+function projectedGeometrySvg(kit, view, viewport) {
+  const geometry = buildShape(kit);
+  const position = geometry.getAttribute("position");
+  const angle = viewAngles[view];
+  const triangles = [];
+  const points = [];
+
+  for (let index = 0; index < position.count; index += 3) {
+    const triangle = [0, 1, 2].map((offset) =>
+      rotateAroundY(
+        {
+          x: position.getX(index + offset),
+          y: position.getY(index + offset),
+          z: position.getZ(index + offset),
+        },
+        angle,
+      ),
+    );
+    const edgeA = {
+      x: triangle[1].x - triangle[0].x,
+      y: triangle[1].y - triangle[0].y,
+      z: triangle[1].z - triangle[0].z,
+    };
+    const edgeB = {
+      x: triangle[2].x - triangle[0].x,
+      y: triangle[2].y - triangle[0].y,
+      z: triangle[2].z - triangle[0].z,
+    };
+    const normal = {
+      x: edgeA.y * edgeB.z - edgeA.z * edgeB.y,
+      y: edgeA.z * edgeB.x - edgeA.x * edgeB.z,
+      z: edgeA.x * edgeB.y - edgeA.y * edgeB.x,
+    };
+    const normalLength = Math.hypot(normal.x, normal.y, normal.z) || 1;
+    points.push(...triangle);
+    const facing = normal.z / normalLength;
+    if (facing <= 0.0001) continue;
+
+    const averageZ = triangle.reduce((sum, point) => sum + point.z, 0) / 3;
+    const luminance = facing >= 0.72 ? 88 : 76;
+
+    triangles.push({ points: triangle, averageZ, luminance });
+  }
+
+  const minX = Math.min(...points.map(({ x }) => x));
+  const maxX = Math.max(...points.map(({ x }) => x));
+  const minY = Math.min(...points.map(({ y }) => y));
+  const maxY = Math.max(...points.map(({ y }) => y));
+  const scale = Math.min(
+    viewport.width / (maxX - minX),
+    viewport.height / (maxY - minY),
+  );
+  const offsetX = viewport.x + (viewport.width - (maxX - minX) * scale) / 2 - minX * scale;
+  const offsetY = viewport.y + (viewport.height - (maxY - minY) * scale) / 2 + maxY * scale;
+
+  const polygons = triangles
+    .sort((left, right) => left.averageZ - right.averageZ)
+    .map(({ points: triangle, luminance }) => {
+      const polygon = triangle
+        .map(({ x, y }) => `${(offsetX + x * scale).toFixed(2)},${(offsetY - y * scale).toFixed(2)}`)
+        .join(" ");
+      const colour = `hsl(42 20% ${luminance.toFixed(1)}%)`;
+      return `<polygon points="${polygon}" fill="${colour}" stroke="${colour}" stroke-width="1.2" stroke-linejoin="round"/>`;
+    })
+    .join("\n");
+
+  geometry.dispose();
+  return `<g>${polygons}</g>`;
 }
 
 function viewSvg(kit, view) {
-  const { width, height, depth } = kit.dimensionsMm;
-  const pad = Math.round(Math.max(width, height) * 0.13);
-  const depthX = view === "front" ? 0 : Math.round(depth * 0.5);
-  const depthY = view === "front" ? 0 : -Math.round(depth * 0.09);
-  const canvasWidth = width + pad * 2 + Math.abs(depthX);
-  const canvasHeight = height + pad * 2 + Math.abs(depthY);
-  const frontX = pad + (view === "rear" ? Math.abs(depthX) : 0);
-  const frontY = pad + Math.abs(depthY);
-  const backX = frontX + (view === "right" ? depthX : -depthX);
-  const backY = frontY + depthY;
-  const sideFill = view === "rear" ? "#b8b0a1" : "#c5bdad";
+  const canvasWidth = 1600;
+  const canvasHeight = 1600;
+  const pad = 180;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasWidth}" height="${canvasHeight}" viewBox="0 0 ${canvasWidth} ${canvasHeight}">
     <rect width="100%" height="100%" fill="#f6f4ef"/>
-    <g transform="translate(${backX} ${backY})" opacity="0.92">${productGroup(kit, { fill: sideFill, suffix: `${view}-back` })}</g>
-    <g transform="translate(${frontX} ${frontY})">${productGroup(kit, { suffix: `${view}-front` })}</g>
+    ${projectedGeometrySvg(kit, view, {
+      x: pad,
+      y: pad,
+      width: canvasWidth - pad * 2,
+      height: canvasHeight - pad * 2,
+    })}
   </svg>`;
 }
 
 function identityBoardSvg(kit) {
   const { width, height, depth } = kit.dimensionsMm;
-  const ratio = width / height;
   const panelWidth = 710;
   const panelHeight = 1120;
-  const maxObjectWidth = 540;
-  const maxObjectHeight = 820;
-  const objectWidth = Math.min(maxObjectWidth, maxObjectHeight * ratio);
-  const objectHeight = objectWidth / ratio;
-  const scale = objectWidth / width;
   const boardWidth = 2400;
   const boardHeight = 1500;
   const labels = ["FRONT ORTHOGRAPHIC", "FRONT RIGHT 30°", "REAR LEFT 30°"];
@@ -197,29 +236,27 @@ function identityBoardSvg(kit) {
 
   const panels = viewNames.map((view, index) => {
     const panelX = 80 + index * 770;
-    const objectX = panelX + (panelWidth - objectWidth) / 2;
-    const objectY = 245 + (maxObjectHeight - objectHeight) / 2;
-    const depthOffset = view === "front" ? 0 : Math.max(16, depth * scale * 0.5);
-    const direction = view === "rear" ? -1 : 1;
-    const transformed = `translate(${objectX} ${objectY}) scale(${scale})`;
-    const backTransform = `translate(${objectX + direction * depthOffset} ${objectY - depthOffset * 0.18}) scale(${scale})`;
 
     return `<g>
       <rect x="${panelX}" y="175" width="${panelWidth}" height="${panelHeight}" rx="26" fill="#fff" stroke="#d8d5ce"/>
       <text x="${panelX + 34}" y="225" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="2" fill="#2d2f2a">${labels[index]}</text>
-      ${view === "front" ? "" : `<g transform="${backTransform}" opacity="0.8">${productGroup(kit, { fill: "#bdb5a7", suffix: `board-${view}-back` })}</g>`}
-      <g transform="${transformed}">${productGroup(kit, { suffix: `board-${view}-front` })}</g>
+      ${projectedGeometrySvg(kit, view, {
+        x: panelX + 54,
+        y: 265,
+        width: panelWidth - 108,
+        height: 950,
+      })}
     </g>`;
   }).join("\n");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${boardWidth}" height="${boardHeight}" viewBox="0 0 ${boardWidth} ${boardHeight}">
     <rect width="100%" height="100%" fill="#f3f1eb"/>
-    <text x="80" y="78" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="3" fill="#121311">VIAIRE · ${publicProductNames[kit.id] ?? kit.id.toUpperCase()}</text>
+    <text x="80" y="78" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="3" fill="#121311">ISANDRE · ${publicProductNames[kit.id] ?? kit.id.toUpperCase()}</text>
     <text x="80" y="125" font-family="Arial, sans-serif" font-size="22" fill="#5f625c">REFERENCE KIT ${kit.version} · IMMUTABLE GEOMETRY</text>
     ${panels}
     <line x1="80" y1="1360" x2="2320" y2="1360" stroke="#bbb8b1"/>
     <text x="80" y="1418" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#121311">${width} W × ${height} H × ${depth} D MM</text>
-    <text x="2320" y="1418" text-anchor="end" font-family="Arial, sans-serif" font-size="22" fill="#5f625c">${kit.openings.length} OPENINGS · OPEN-BACK · SCALE 1:${Math.max(1, Math.round(1 / scale))}</text>
+    <text x="2320" y="1418" text-anchor="end" font-family="Arial, sans-serif" font-size="22" fill="#5f625c">${kit.openings.length} OPENINGS · OPEN-BACK · DIMENSIONED MASTER</text>
   </svg>`;
 }
 
@@ -300,7 +337,7 @@ for (const kit of Object.values(data.kits)) {
     geometryChecksum,
     meshBoundsMm,
     generatedAt: new Date().toISOString(),
-    generatedFrom: "modules/projection/core/reference-kits.data.json",
+    generatedFrom: "lib/isandre/geometry.data.json",
     assets: {
       frontOrthographic: "front-orthographic.png",
       frontRight30: "front-right-30.png",

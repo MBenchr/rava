@@ -1,0 +1,85 @@
+{
+  "version": "2026.07.27-1",
+  "status": "pilot",
+  "policy": {
+    "generatedImagesCreate": "desire",
+    "realPhotographsCreate": "proof",
+    "publicIntegrationAllowed": false,
+    "fullSceneReconstructionRequired": true,
+    "visible3dCollageAllowed": false
+  },
+  "pilots": [
+    {
+      "productId": "seuil-01",
+      "finishId": "chalk",
+      "scene": "luminous-passage",
+      "geometryStatus": "approved",
+      "referenceKit": "2026.07.27-1",
+      "identityBoard": "public/projection-kits/seuil-01/2026.07.27-1/identity-board.png",
+      "expectedFaceRatio": 0.554348,
+      "expectedOpeningCount": 8,
+      "expectedSectionMm": 80,
+      "camera": {
+        "focalLengthEquivalentMm": 42,
+        "heightCm": 136,
+        "orientation": "landscape"
+      },
+      "directions": [
+        "media/a6-pilots/seuil-01/direction-a.png",
+        "media/a6-pilots/seuil-01/direction-b.png",
+        "media/a6-pilots/seuil-01/direction-c.png"
+      ],
+      "selected": "media/a6-pilots/seuil-01/selected.png",
+      "selectedDirection": "direction-a-refined",
+      "releaseStatus": "digitally-approved-pilot"
+    },
+    {
+      "productId": "portee-02",
+      "finishId": "sage",
+      "scene": "living-dining-divider",
+      "geometryStatus": "approved",
+      "referenceKit": "2026.07.27-1",
+      "identityBoard": "public/projection-kits/portee-02/2026.07.27-1/identity-board.png",
+      "expectedFaceRatio": 1.803922,
+      "expectedOpeningCount": 8,
+      "expectedSectionMm": 80,
+      "camera": {
+        "focalLengthEquivalentMm": 40,
+        "heightCm": 132,
+        "orientation": "landscape"
+      },
+      "directions": [
+        "media/a6-pilots/portee-02/direction-a.png",
+        "media/a6-pilots/portee-02/direction-b.png",
+        "media/a6-pilots/portee-02/direction-c.png"
+      ],
+      "selected": "media/a6-pilots/portee-02/selected.png",
+      "selectedDirection": "direction-c",
+      "releaseStatus": "digitally-approved-pilot"
+    },
+    {
+      "productId": "veille-03",
+      "finishId": "rose-clay",
+      "scene": "bedside-evening",
+      "geometryStatus": "blocked",
+      "referenceKit": null,
+      "identityBoard": null,
+      "expectedFaceRatio": null,
+      "expectedOpeningCount": 2,
+      "expectedSectionMm": null,
+      "camera": {
+        "focalLengthEquivalentMm": 48,
+        "heightCm": 128,
+        "orientation": "portrait"
+      },
+      "directions": [
+        "media/a6-pilots/veille-03/direction-a.png",
+        "media/a6-pilots/veille-03/direction-b.png",
+        "media/a6-pilots/veille-03/direction-c.png"
+      ],
+      "selected": "media/a6-pilots/veille-03/selected-concept.png",
+      "selectedDirection": "direction-c-refined",
+      "releaseStatus": "concept-blocked"
+    }
+  ]
+}

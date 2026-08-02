@@ -3,11 +3,15 @@
 import Image from "next/image";
 import { Menu, ShoppingBag, X } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { useState } from "react";
 
+import { BrandMark } from "@/components/brand-mark";
 import CartDrawer from "@/components/cart-drawer";
 import { useCart } from "@/components/cart-provider";
 import { Button } from "@/components/ui/button";
+import { useTechnicalSheet } from "@/components/technical-sheet-provider";
+import { getContent } from "@/content";
 import {
   brandIdentity,
   getHomeRoute,
@@ -15,20 +19,27 @@ import {
   getLocalizedRoute,
   getProductCopy,
   productList,
-  siteMeta,
   type Locale,
-} from "@/lib/rava-content";
+} from "@/lib/isandre/catalog";
 
 type SiteHeaderProps = {
   locale: Locale;
   onProjectionOpen?: () => void;
+  alternateLocaleHref?: string;
 };
 
-export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
+export function SiteHeader({
+  locale,
+  onProjectionOpen,
+  alternateLocaleHref,
+}: SiteHeaderProps) {
+  const content = getContent(locale);
   const { items, openCart, totalItems } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const home = getHomeRoute(locale);
-  const otherLocaleHref = locale === "en" ? "/fr" : "/";
+  const otherLocaleHref =
+    alternateLocaleHref ?? (locale === "en" ? "/fr" : "/");
+  const makingHref = locale === "fr" ? "/fr/fabrication" : "/making";
   const firstCartImage = items[0]
     ? getFinishMedia(items[0].productId, items[0].finishId).packshot
     : null;
@@ -41,24 +52,24 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
   return (
     <>
       <div className="launch-note">
-        <span>{locale === "fr" ? "L’édition française" : "The French Edition"}</span>
-        <span>{locale === "fr" ? "Livraison vers 30 destinations" : "Delivering to 30 destinations"}</span>
+        <span>{content.launch.edition}</span>
+        <span>{content.launch.delivery}</span>
       </div>
       <header className="site-header">
         <div className="page-shell site-header__inner">
-          <Link href={home} className="site-wordmark" aria-label="VIAIRE home">
-            {brandIdentity.name}
+          <Link href={home} className="site-wordmark" aria-label="ISANDRE home">
+            <BrandMark priority />
           </Link>
 
           <nav className="site-nav">
-            <Link href={`${home}#collection`}>{locale === "fr" ? "Les pièces" : "The pieces"}</Link>
-            <Link href={`${home}#story`}>{locale === "fr" ? "L’histoire" : "The story"}</Link>
+            <Link href={`${home}#collection`}>{content.navigation.pieces}</Link>
+            <Link href={makingHref}>{content.navigation.making}</Link>
             {onProjectionOpen ? (
               <button type="button" onClick={onProjectionOpen}>
-                {locale === "fr" ? "Voir chez vous" : "View at home"}
+                {content.navigation.projection}
               </button>
             ) : (
-              <Link href={home}>{locale === "fr" ? "Voir chez vous" : "View at home"}</Link>
+              <Link href={home}>{content.navigation.projection}</Link>
             )}
           </nav>
 
@@ -67,7 +78,7 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
               href={otherLocaleHref}
               className="site-locale"
               onClick={() => {
-                document.cookie = `viaire-locale=${locale === "en" ? "fr" : "en"}; Path=/; Max-Age=31536000; SameSite=Lax`;
+                document.cookie = `isandre-locale=${locale === "en" ? "fr" : "en"}; Path=/; Max-Age=31536000; SameSite=Lax`;
               }}
             >
               {locale === "en" ? "FR" : "EN"}
@@ -76,7 +87,7 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
               type="button"
               className="bag-button"
               onClick={openCart}
-              aria-label={locale === "fr" ? "Ouvrir le panier" : "Open bag"}
+              aria-label={content.navigation.bag}
             >
               {firstCartImage ? (
                 <span className="bag-button__thumb">
@@ -92,7 +103,7 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
               ) : (
                 <ShoppingBag className="size-4" />
               )}
-              <span className="bag-button__label">{locale === "fr" ? "Panier" : "Bag"}</span>
+              <span className="bag-button__label">{content.navigation.bag}</span>
               <strong>{totalItems}</strong>
             </button>
             <Button
@@ -100,7 +111,11 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
               size="icon-sm"
               variant="ghost"
               onClick={() => setMenuOpen((value) => !value)}
-              aria-label="Menu"
+              aria-label={
+                menuOpen
+                  ? content.navigation.closeMenu
+                  : content.navigation.openMenu
+              }
             >
               {menuOpen ? <X /> : <Menu />}
             </Button>
@@ -111,14 +126,14 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
           <div className="mobile-menu">
             <div className="page-shell">
               <Link href={`${home}#collection`} onClick={() => setMenuOpen(false)}>
-                {locale === "fr" ? "Les pièces" : "The pieces"}
+                {content.navigation.pieces}
               </Link>
-              <Link href={`${home}#story`} onClick={() => setMenuOpen(false)}>
-                {locale === "fr" ? "L’histoire" : "The story"}
+              <Link href={makingHref} onClick={() => setMenuOpen(false)}>
+                {content.navigation.making}
               </Link>
               {onProjectionOpen ? (
                 <button type="button" onClick={openRoomView}>
-                  {locale === "fr" ? "Voir chez vous" : "View at home"}
+                  {content.navigation.projection}
                 </button>
               ) : null}
               <button
@@ -128,17 +143,17 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
                   openCart();
                 }}
               >
-                <span>{locale === "fr" ? "Panier" : "Bag"}</span>
+                <span>{content.navigation.bag}</span>
                 <span>{totalItems}</span>
               </button>
               <Link
                 href={otherLocaleHref}
                 onClick={() => {
-                  document.cookie = `viaire-locale=${locale === "en" ? "fr" : "en"}; Path=/; Max-Age=31536000; SameSite=Lax`;
+                  document.cookie = `isandre-locale=${locale === "en" ? "fr" : "en"}; Path=/; Max-Age=31536000; SameSite=Lax`;
                   setMenuOpen(false);
                 }}
               >
-                {locale === "en" ? "Français" : "English"}
+                {content.navigation.language}
               </Link>
             </div>
           </div>
@@ -150,13 +165,17 @@ export function SiteHeader({ locale, onProjectionOpen }: SiteHeaderProps) {
 }
 
 export function SiteFooter({ locale }: { locale: Locale }) {
+  const content = getContent(locale);
+  const { openTechnicalSheet } = useTechnicalSheet();
+  const makingHref = locale === "fr" ? "/fr/fabrication" : "/making";
+
   return (
     <footer className="site-footer">
       <div className="page-shell site-footer__top">
         <div>
-          <p className="eyebrow text-white/45">{locale === "fr" ? "Maison française" : "French design house"}</p>
-          <p className="display-title site-footer__promise">{brandIdentity.signatures[locale]}</p>
-          <p className="site-footer__origin">{brandIdentity.originClaim[locale]}</p>
+          <p className="eyebrow text-white/45">{content.brand.collectionLead}</p>
+          <p className="display-title site-footer__promise">{content.brand.signature}</p>
+          <p className="site-footer__origin">{content.brand.origin}</p>
         </div>
         <div>
           <p className="site-footer__label">{brandIdentity.collectionLabels[locale]}</p>
@@ -167,23 +186,59 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           ))}
         </div>
         <div>
-          <p className="site-footer__label">{locale === "fr" ? "Service" : "Service"}</p>
-          <Link href={locale === "fr" ? "/fr/fiche-technique" : "/technical-sheet"}>
-            {locale === "fr" ? "Fiche technique" : "Technical sheet"}
-          </Link>
+          <p className="site-footer__label">{content.common.service}</p>
+          <Link href={makingHref}>{content.navigation.making}</Link>
+          <button type="button" onClick={() => openTechnicalSheet()}>
+            {content.common.technicalSheet}
+          </button>
           <Link href={locale === "fr" ? "/fr/mentions-legales" : "/legal"}>
-            {locale === "fr" ? "Mentions légales" : "Legal"}
+            {content.common.legal}
           </Link>
-          <a href={`mailto:${siteMeta.leadEmail}`}>{locale === "fr" ? "Contact" : "Contact"}</a>
+          <Link href={locale === "fr" ? "/fr/contact?kind=project" : "/contact?kind=project"}>
+            {content.common.contact}
+          </Link>
+          <Link href={locale === "fr" ? "/fr/contact?kind=trade" : "/contact?kind=trade"}>
+            {content.trade.cta}
+          </Link>
+          <Link href={locale === "fr" ? "/fr/contact?kind=press" : "/contact?kind=press"}>
+            {locale === "fr" ? "Presse" : "Press"}
+          </Link>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("isandre:consent-open"))}
+          >
+            {content.measurement.preferences}
+          </button>
         </div>
       </div>
       <div className="page-shell">
-        <p className="site-footer__wordmark">{brandIdentity.name}</p>
+        <BrandMark className="site-footer__wordmark" tone="paper" />
         <div className="site-footer__bottom">
-          <span>© {new Date().getFullYear()} VIAIRE</span>
-          <span>{locale === "fr" ? "Dessiné en France" : "Designed in France"}</span>
+          <span>© {new Date().getFullYear()} ISANDRE</span>
+          <span>{content.brand.origin}</span>
         </div>
       </div>
     </footer>
+  );
+}
+
+export default function SiteShell({
+  children,
+  locale,
+  alternateLocaleHref,
+}: {
+  children: ReactNode;
+  locale: Locale;
+  alternateLocaleHref?: string;
+}) {
+  return (
+    <>
+      <SiteHeader
+        locale={locale}
+        alternateLocaleHref={alternateLocaleHref}
+      />
+      {children}
+      <SiteFooter locale={locale} />
+    </>
   );
 }

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "productId": "veille-03",
+  "status": "pending-manufacturer-approval",
+  "supplier": "TO BE COMPLETED",
+  "drawingReference": "TO BE COMPLETED",
+  "drawingDate": "2026-07-29",
+  "dimensionsMm": null,
+  "outerRadiusMm": null,
+  "wallThicknessMm": null,
+  "plinth": null,
+  "openings": [],
+  "approval": null,
+  "notes": "Complete only from a signed manufacturer drawing. Never infer dimensions from a photograph."
+}

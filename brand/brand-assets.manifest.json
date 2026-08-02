@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "brand": "ISANDRE",
+  "collection": "ṬĀQA",
+  "generatedAt": "2026-07-27",
+  "wordmark": {
+    "kind": "custom-vector-capitals",
+    "viewBox": "0 0 1000 180",
+    "minimumScreenWidthPx": 90,
+    "minimumPrintWidthMm": 18
+  },
+  "entaille": {
+    "viewBox": "0 0 100 155",
+    "ratio": "1:1.55",
+    "notch": {
+      "width": 34,
+      "height": 34,
+      "centerY": 96.1
+    }
+  },
+  "originPlate": {
+    "widthMm": 42.07,
+    "heightMm": 26,
+    "cornerRadiusMm": 0.8,
+    "status": "prototype-required"
+  },
+  "files": [
+    {
+      "path": "masters/isandre-wordmark-positive.svg",
+      "sha256": "964106bfb6610093e3ba37e61d846916776bd4808ae796f9474c328b6de2d033"
+    },
+    {
+      "path": "masters/isandre-wordmark-negative.svg",
+      "sha256": "92158665700bae39b4e7f49ade8d0eda68fe5d0138dd555c48aed5e2efaa919b"
+    },
+    {
+      "path": "masters/isandre-wordmark-monochrome.svg",
+      "sha256": "cd32d57944c911a384dcb0c951e188e5422146b54424a4318eb759613c6ef5ee"
+    },
+    {
+      "path": "masters/isandre-entaille-positive.svg",
+      "sha256": "2151d7d0fe2fb9d4ca2be6872a7e3c57ac2bb6b847be04f976985cb055cb7b2f"
+    },
+    {
+      "path": "masters/isandre-entaille-negative.svg",
+      "sha256": "fc1e3850aaf0b3154ceea37491579353faff2a86e7de433d1cc0a9318cb52b48"
+    },
+    {
+      "path": "masters/isandre-entaille-monochrome.svg",
+      "sha256": "9078478e2045141b70574ead483337ddb5fb5f0e8c6dd6ac23aa9ee56ce6876f"
+    },
+    {
+      "path": "masters/isandre-taqa-lockup-positive.svg",
+      "sha256": "644ba5dc90174368a7ce0e8260c6219d94aa4b0fc7825926a6d9aacea13707b9"
+    },
+    {
+      "path": "masters/isandre-taqa-lockup-negative.svg",
+      "sha256": "120cf8011d9521169d443121f1ba9710e3d26aa0cd5a005d54c5ce98be5ad17a"
+    },
+    {
+      "path": "masters/isandre-favicon.svg",
+      "sha256": "922f1a6f1fe8a03dec08290ca9b736d48cfa395660f03fab3d00b852ea525bb5"
+    },
+    {
+      "path": "plate/isandre-origin-plate-proof.svg",
+      "sha256": "a7cd007b2f78c149bb547db0f7c2949e1820f8449154f1e1cd4682feb8b50303"
+    },
+    {
+      "path": "plate/isandre-origin-plate-engraving-prototype.svg",
+      "sha256": "aff0540a6d60d5aafee58d04bc6e5d2134547a7102b2f725f59dd8f7154d61bd"
+    },
+    {
+      "path": "plate/isandre-origin-plate-1to1-a4.svg",
+      "sha256": "b34731d2a08615331ec6a0e232a4e4afbcb3aa758ce4bd548f11a463def25c4a"
+    },
+    {
+      "path": "templates/authenticity-card-front.svg",
+      "sha256": "0dc2190e6329b3535aacbf4a50b14bdfe33bfc878c67f23b3804a61921ca30c3"
+    },
+    {
+      "path": "templates/authenticity-card-back.svg",
+      "sha256": "603e2e0a6d70db9964251f62ab13295e45f0c88b803d86d139d884689e448093"
+    },
+    {
+      "path": "templates/certificate-a4.svg",
+      "sha256": "e45889bcc99f89b36c47fc8a91c6c952282e07212964140371a24d3cc1d3c327"
+    },
+    {
+      "path": "templates/packaging-label-a6.svg",
+      "sha256": "c3d9c1a15523a54de1c2660e7d6737bd2e923dd625ebcbb6478a79afdd5e8971"
+    },
+    {
+      "path": "templates/press-cover-a4.svg",
+      "sha256": "0d12fdad5289e0632c67cad040c2e1309fed385283545d61bf0f748110246bde"
+    },
+    {
+      "path": "templates/trade-cover-a4.svg",
+      "sha256": "24bd59f86dd9864262fb0717beb64993433d5582055cd01c743414718f03a3f5"
+    },
+    {
+      "path": "templates/social-portrait-4x5.svg",
+      "sha256": "66865397cfbc99fc5102290094cd18f98cea360261e69661a5dddc74f2e7421a"
+    },
+    {
+      "path": "templates/presentation-cover-16x9.svg",
+      "sha256": "17be594e9490be6340e70db1abd6f2867cfd5bc2dd4d6e9197e7f7f9ad7c360c"
+    },
+    {
+      "path": "raster/isandre-wordmark-ink.png",
+      "sha256": "2b35c6ba109d69a2d4704ac4d96ce6ca84894c055945239e7a45e910cc85acab"
+    },
+    {
+      "path": "raster/isandre-wordmark-paper.png",
+      "sha256": "108ed5c6d49aa107ca35034959bfa8e5e1337b7f4dad4ccc566b663133d2776d"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="85mm" height="55mm" viewBox="0 0 850 550" role="img" aria-labelledby="title desc">
+  <title id="title">ISANDRE authenticity card back</title>
+  <desc id="desc">Prototype back of the ISANDRE authenticity card.</desc>
+  <rect width="850" height="550" fill="#F4EFE6"/>
+  <text x="65" y="72" font-family="Arial, Helvetica, sans-serif" fill="#6D5B4B" font-size="16" letter-spacing="5">AUTHENTICITY CARD</text>
+  <text x="65" y="155" font-family="Arial, Helvetica, sans-serif" fill="#1B1917" font-size="30" letter-spacing="4">ṬĀQA · SEUIL 01</text>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#1B1917" font-size="18">
+    <text x="65" y="225">NO 000127</text>
+    <text x="65" y="275">FINISH · CHALK</text>
+    <text x="65" y="325">DATE · ____ / ____ / ________</text>
+    <text x="65" y="375">PRODUCTION SITE · ____________________</text>
+  </g>
+  <path d="M65 445H785" stroke="#C9C0B2"/>
+  <text x="65" y="487" font-family="Arial, Helvetica, sans-serif" fill="#6D5B4B" font-size="15">The persistent product passport is accessed through the concealed NFC plate.</text>
+</svg>

@@ -1,0 +1,470 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-02T13:32:09.713Z",
+  "status": "preproduction-visualisation",
+  "proofPolicy": "These generated images explain intended manufacturing and material direction. They are not evidence of a supplier, workshop, artisan, prototype, origin, test or completed production.",
+  "originDirection": {
+    "design": "France",
+    "manufacturing": "Italy",
+    "status": "user-confirmed-commercial-direction",
+    "proofGate": "H-006"
+  },
+  "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia",
+  "assets": [
+    {
+      "id": "W01",
+      "slug": "w01-seuil-mould-preparation",
+      "productId": "seuil-01",
+      "title": "Mould preparation",
+      "ratio": "3:2",
+      "status": "approved-visualisation",
+      "disclosure": {
+        "en": "Pre-production visualisation",
+        "fr": "Visualisation de préproduction"
+      },
+      "alt": {
+        "en": "Pre-production visualisation of the aluminium mould preparation planned for SEUIL 01.",
+        "fr": "Visualisation de préproduction de la préparation du moule aluminium prévue pour SEUIL 01."
+      },
+      "caption": {
+        "en": "Preparing the aluminium mould before rotational moulding.",
+        "fr": "Préparation du moule aluminium avant rotomoulage."
+      },
+      "source": {
+        "path": "media/preproduction-workshop/w01-seuil-mould-preparation.png",
+        "sha256": "45dc1b672bcab1158c1d12c78ab6531f7daeb277e05acbb429edb6265519a17b",
+        "width": 1586,
+        "height": 992,
+        "aiOrigin": true
+      },
+      "derivatives": {
+        "index.webp": {
+          "sha256": "de0762179963b371268c95dc3026748987014403aacc5f958a70588671ac9bea",
+          "bytes": 181780,
+          "width": 1536,
+          "height": 961
+        },
+        "index.avif": {
+          "sha256": "4bebe655ebc64e8219b5059bbd8f55c2e37b1bf97213cdb807140eac9a088d9f",
+          "bytes": 121734,
+          "width": 1536,
+          "height": 961
+        },
+        "index.jpg": {
+          "sha256": "07eff089f9c9eda11b3594588a2c595f042b2c7b496490501a31a551f083be7d",
+          "bytes": 284782,
+          "width": 1536,
+          "height": 961
+        },
+        "mobile.webp": {
+          "sha256": "4c96e29858cd277d8b7c5e04cb0c5e4b3247a2ad3a1558bdc875963f5017dd00",
+          "bytes": 96334,
+          "width": 960,
+          "height": 600
+        },
+        "mobile.avif": {
+          "sha256": "2975b8c55489781297b73f871cf252531ed84ada8bf305a91088304ef8fe9ff5",
+          "bytes": 67623,
+          "width": 960,
+          "height": 600
+        },
+        "thumb.webp": {
+          "sha256": "3283fb6ea94beae6ab1db0d0c456550d51ac6b1ed3c074db600beb9d7c6d4267",
+          "bytes": 24820,
+          "width": 360,
+          "height": 360
+        }
+      }
+    },
+    {
+      "id": "W02",
+      "slug": "w02-portee-demoulding",
+      "productId": "portee-02",
+      "title": "Cooling and demoulding",
+      "ratio": "3:2",
+      "status": "approved-visualisation",
+      "disclosure": {
+        "en": "Pre-production visualisation",
+        "fr": "Visualisation de préproduction"
+      },
+      "alt": {
+        "en": "Pre-production visualisation of PORTÉE 02 during cooling and demoulding.",
+        "fr": "Visualisation de préproduction de PORTÉE 02 pendant son refroidissement et son démoulage."
+      },
+      "caption": {
+        "en": "Cooling and demoulding the single-piece open form.",
+        "fr": "Refroidissement et démoulage de la forme ouverte monobloc."
+      },
+      "source": {
+        "path": "media/preproduction-workshop/w02-portee-demoulding.png",
+        "sha256": "b3276dc2ca32f2d3648346f5e54219dda828ee8f4c66cc0ea2d5806bab1db2e8",
+        "width": 1586,
+        "height": 992,
+        "aiOrigin": true
+      },
+      "derivatives": {
+        "index.webp": {
+          "sha256": "f104d328847138b06aef15b21579c91b0b27c0b3be5a53a7db5b9a96ed145866",
+          "bytes": 162108,
+          "width": 1536,
+          "height": 961
+        },
+        "index.avif": {
+          "sha256": "319d8e2786206f87bcc4dbe25243df9af9c0b58a470f301831f30ea29240f5d7",
+          "bytes": 106982,
+          "width": 1536,
+          "height": 961
+        },
+        "index.jpg": {
+          "sha256": "966033657c410a9a25a568375e8371449a9a1466020c01256e68db9052bd0ff1",
+          "bytes": 260302,
+          "width": 1536,
+          "height": 961
+        },
+        "mobile.webp": {
+          "sha256": "f322109d908adc2a3445ec9ec2f3f2cafddeba73e77452a6b9ecd69ed85744f2",
+          "bytes": 80900,
+          "width": 960,
+          "height": 600
+        },
+        "mobile.avif": {
+          "sha256": "678ab164456e0ed07dbf273c9ad128fba8578979e5711e009347a925965f03c7",
+          "bytes": 56878,
+          "width": 960,
+          "height": 600
+        },
+        "thumb.webp": {
+          "sha256": "843b027c5eab7aa3712b5231cab7d0232550bb198311587e8f63b0d0d3f7f404",
+          "bytes": 20390,
+          "width": 360,
+          "height": 360
+        }
+      }
+    },
+    {
+      "id": "W03",
+      "slug": "w03-seuil-quality-control",
+      "productId": "seuil-01",
+      "title": "Surface and geometry inspection",
+      "ratio": "4:5",
+      "status": "approved-visualisation",
+      "disclosure": {
+        "en": "Pre-production visualisation",
+        "fr": "Visualisation de préproduction"
+      },
+      "alt": {
+        "en": "Pre-production visualisation of the planned surface and geometry inspection for SEUIL 01.",
+        "fr": "Visualisation de préproduction du contrôle de surface et de géométrie prévu pour SEUIL 01."
+      },
+      "caption": {
+        "en": "Inspecting radii, continuity and the low-sheen surface.",
+        "fr": "Contrôle des rayons, de la continuité et de la surface satinée mate."
+      },
+      "source": {
+        "path": "media/preproduction-workshop/w03-seuil-quality-control.png",
+        "sha256": "2037ee4b1978125020b048089482f94b96f830a5d92d1325d0d5bf2fab7db23f",
+        "width": 1003,
+        "height": 1568,
+        "aiOrigin": true
+      },
+      "derivatives": {
+        "index.webp": {
+          "sha256": "074041da0e4ab858d851d03d48721075a9770dd9b48cc6489b1cab320f43233e",
+          "bytes": 135828,
+          "width": 1003,
+          "height": 1568
+        },
+        "index.avif": {
+          "sha256": "6e1c54ad25baacb1d63418fb947ddc6645299d162fd88d6f7344ac6cf0fd90d9",
+          "bytes": 85402,
+          "width": 1003,
+          "height": 1568
+        },
+        "index.jpg": {
+          "sha256": "2d5cd0f2cdd130ed8511255e829cf38159bf39d47366e2faa6251c8b7c21b291",
+          "bytes": 230565,
+          "width": 1003,
+          "height": 1568
+        },
+        "mobile.webp": {
+          "sha256": "bc8247da32caa8fbe6f16aa11a025c8a3bc18448a720c84a2eed98d0a3401d5d",
+          "bytes": 127476,
+          "width": 960,
+          "height": 1501
+        },
+        "mobile.avif": {
+          "sha256": "c0bc97b18a57c9cb8ebc83a59e07c6ce817f5d99f595ff7d11dda6ea24866ed0",
+          "bytes": 80604,
+          "width": 960,
+          "height": 1501
+        },
+        "thumb.webp": {
+          "sha256": "c5cd463d97e5103c55b0e3583af1c8049f1cf15f902b2b0c69b709e1fe211de1",
+          "bytes": 17420,
+          "width": 360,
+          "height": 360
+        }
+      }
+    },
+    {
+      "id": "W04",
+      "slug": "w04-finish-coupons",
+      "productId": null,
+      "title": "Finish coupons and colour control",
+      "ratio": "4:5",
+      "status": "approved-visualisation",
+      "disclosure": {
+        "en": "Pre-production visualisation",
+        "fr": "Visualisation de préproduction"
+      },
+      "alt": {
+        "en": "Pre-production visualisation of four standard LLDPE finish coupons under controlled light.",
+        "fr": "Visualisation de préproduction de quatre coupons de finition LLDPE sous lumière contrôlée."
+      },
+      "caption": {
+        "en": "Comparing Chalk, Butter, Sage and Rose Clay under controlled light.",
+        "fr": "Comparaison de Craie, Beurre, Sauge et Argile rose sous lumière contrôlée."
+      },
+      "source": {
+        "path": "media/preproduction-workshop/w04-finish-coupons.png",
+        "sha256": "7d235b50a103534f3ecaf3f7242aabbc2104fadc149b5e9bd024107d89e75993",
+        "width": 1122,
+        "height": 1402,
+        "aiOrigin": true
+      },
+      "derivatives": {
+        "index.webp": {
+          "sha256": "b68e36a89f3ae5f87d428c513e9189ed685be748b65d94c6e0a331bce2ec584b",
+          "bytes": 146060,
+          "width": 1122,
+          "height": 1402
+        },
+        "index.avif": {
+          "sha256": "331ee2c2c983e79a05441dfe44b23ca05625b080ecbff8564942bfd9cbfceb08",
+          "bytes": 87943,
+          "width": 1122,
+          "height": 1402
+        },
+        "index.jpg": {
+          "sha256": "beae7f8602b3e8c4a314116b61ac1ca4dea392e3942579223164b5fcd812b9f5",
+          "bytes": 219255,
+          "width": 1122,
+          "height": 1402
+        },
+        "mobile.webp": {
+          "sha256": "4af4cb8911b28d0bac279d25c08325c8bc0b81f5971e85b286e250bfa932eefd",
+          "bytes": 113212,
+          "width": 960,
+          "height": 1200
+        },
+        "mobile.avif": {
+          "sha256": "bbb694a788a5e191dcbb62db5182c6214c35de0a0c447426b8bc044976c4c610",
+          "bytes": 71223,
+          "width": 960,
+          "height": 1200
+        },
+        "thumb.webp": {
+          "sha256": "1008cb434c36ce175a58b69464b28759a2534c99ce97f4deff9cb783fcc82bcd",
+          "bytes": 20280,
+          "width": 360,
+          "height": 360
+        }
+      }
+    },
+    {
+      "id": "W05",
+      "slug": "w05-veille-demoulding",
+      "productId": "veille-03",
+      "title": "VEILLE demoulding",
+      "ratio": "3:2",
+      "status": "approved-visualisation",
+      "disclosure": {
+        "en": "Pre-production visualisation",
+        "fr": "Visualisation de préproduction"
+      },
+      "alt": {
+        "en": "Workshop visualisation of VEILLE 03 after demoulding on a worn inspection bench.",
+        "fr": "Visualisation d’atelier de VEILLE 03 après démoulage sur un établi d’inspection patiné."
+      },
+      "caption": {
+        "en": "The compact form is released, cooled and checked as a single piece.",
+        "fr": "La forme compacte est libérée, refroidie et contrôlée d’un seul tenant."
+      },
+      "source": {
+        "path": "media/preproduction-workshop/w05-veille-demoulding.png",
+        "sha256": "aec56cf43d6128cb0920bf1698f2028baf60c0318a48167c04bffcc46a389106",
+        "width": 1586,
+        "height": 992,
+        "aiOrigin": true
+      },
+      "derivatives": {
+        "index.webp": {
+          "sha256": "8475e648d31118f3b260fcdc7ec53ca2ff2b891a44450b6f9c01d8fd3761b4e2",
+          "bytes": 168646,
+          "width": 1536,
+          "height": 961
+        },
+        "index.avif": {
+          "sha256": "5f461da30a0c5c6683c5ac903c146f6b90e9d110993ae33c350b8270648708ca",
+          "bytes": 107781,
+          "width": 1536,
+          "height": 961
+        },
+        "index.jpg": {
+          "sha256": "7216ec191febce2551385617ebd8b90919be71bcf36cc5d2f240fe085b2696cc",
+          "bytes": 249659,
+          "width": 1536,
+          "height": 961
+        },
+        "mobile.webp": {
+          "sha256": "0dd9c10740ef98514c5fc485600a9ea47934503fecabb52a7b78a2efe0b153f8",
+          "bytes": 80632,
+          "width": 960,
+          "height": 600
+        },
+        "mobile.avif": {
+          "sha256": "e3f585d76fbad5c11eb21d0e96970d4a669672bfe9aefb026a89cfdb77e99337",
+          "bytes": 56353,
+          "width": 960,
+          "height": 600
+        },
+        "thumb.webp": {
+          "sha256": "a93d1f2899f8f9b40b2482191590c69ac3cf3f77dc4ace5b7c598bb7677842f3",
+          "bytes": 21640,
+          "width": 360,
+          "height": 360
+        }
+      }
+    },
+    {
+      "id": "W06",
+      "slug": "w06-veille-hand-finishing",
+      "productId": "veille-03",
+      "title": "VEILLE hand finishing",
+      "ratio": "4:5",
+      "status": "approved-visualisation",
+      "disclosure": {
+        "en": "Pre-production visualisation",
+        "fr": "Visualisation de préproduction"
+      },
+      "alt": {
+        "en": "Workshop visualisation of a craftsperson hand-finishing the upper opening of VEILLE 03 in Butter.",
+        "fr": "Visualisation d’atelier d’une artisane finalisant à la main l’ouverture supérieure de VEILLE 03 en Beurre."
+      },
+      "caption": {
+        "en": "Edges and radii are finished by hand until the surface reads as one continuous gesture.",
+        "fr": "Arêtes et rayons sont finalisés à la main jusqu’à former un geste continu."
+      },
+      "source": {
+        "path": "media/preproduction-workshop/w06-veille-hand-finishing.png",
+        "sha256": "4923e982d14d129591a0b4f56177dd7178bb3f501d9dd7a681ecee34cbbdf26b",
+        "width": 1586,
+        "height": 992,
+        "aiOrigin": true
+      },
+      "derivatives": {
+        "index.webp": {
+          "sha256": "42baeeb52d8ca54e31c12402b7a9108e5daa98856e0f4cdd8cf22c65c8480b94",
+          "bytes": 110106,
+          "width": 1536,
+          "height": 961
+        },
+        "index.avif": {
+          "sha256": "165f5f631a09237553d7d3839e4d4b25100d7aa897c801e0660412678e118c61",
+          "bytes": 64187,
+          "width": 1536,
+          "height": 961
+        },
+        "index.jpg": {
+          "sha256": "5b2dbdeff45c4548eb4911719622ce0860ae62c3faf17cccaa689e8fdaac01ca",
+          "bytes": 187554,
+          "width": 1536,
+          "height": 961
+        },
+        "mobile.webp": {
+          "sha256": "26a5fd989a14e273ac01eab8bad33bce88eb3fd6499bc384f65be0b1347e206e",
+          "bytes": 55020,
+          "width": 960,
+          "height": 600
+        },
+        "mobile.avif": {
+          "sha256": "5c83ea70d3e93dc7fff183a336bc81b3d559672efd5f138f5d524cd7b7fe2f77",
+          "bytes": 36365,
+          "width": 960,
+          "height": 600
+        },
+        "thumb.webp": {
+          "sha256": "85cb53a8f9da885bed7d2a61a5ee74b11a677fc30d35a3a2b915df4252e39036",
+          "bytes": 17434,
+          "width": 360,
+          "height": 360
+        }
+      }
+    },
+    {
+      "id": "W07",
+      "slug": "w07-portee-opening-finish",
+      "productId": "portee-02",
+      "title": "PORTÉE opening finish",
+      "ratio": "3:2",
+      "status": "approved-visualisation",
+      "disclosure": {
+        "en": "Pre-production visualisation",
+        "fr": "Visualisation de préproduction"
+      },
+      "alt": {
+        "en": "Workshop visualisation of PORTÉE 02 in Sage during the finishing of its central arch.",
+        "fr": "Visualisation d’atelier de PORTÉE 02 en Sauge pendant la finition de son arche centrale."
+      },
+      "caption": {
+        "en": "The central opening is refined by hand while the complete geometry remains visible.",
+        "fr": "L’ouverture centrale est reprise à la main tandis que la géométrie complète reste lisible."
+      },
+      "source": {
+        "path": "media/preproduction-workshop/w07-portee-opening-finish.png",
+        "sha256": "92a2fac27ed54ddbff5b4b62e9a6e8df24759d957ae8633dfa9e38343aba963a",
+        "width": 1586,
+        "height": 992,
+        "aiOrigin": true
+      },
+      "derivatives": {
+        "index.webp": {
+          "sha256": "2adc3499f7c4699036bca171857292dd310c8ad2e07e3b49c000476327de3563",
+          "bytes": 157778,
+          "width": 1536,
+          "height": 961
+        },
+        "index.avif": {
+          "sha256": "1981c61df2864dfa2a739ccc16aff5f285ba9a1461db1b13f707c3db354f37e1",
+          "bytes": 99177,
+          "width": 1536,
+          "height": 961
+        },
+        "index.jpg": {
+          "sha256": "5d959a86fd1f4c38b5e54fa653b3f25baae561d75d003a82538b6ae0fc40e2df",
+          "bytes": 242463,
+          "width": 1536,
+          "height": 961
+        },
+        "mobile.webp": {
+          "sha256": "b713abd8dc987db560f5043e612af0cc1e4f3cd2d1c720627081ff8e45e8f7bd",
+          "bytes": 74988,
+          "width": 960,
+          "height": 600
+        },
+        "mobile.avif": {
+          "sha256": "7d735019bb87413293ae8d236251d016aa80dfbad8af53711df984b7ffaa3db7",
+          "bytes": 51498,
+          "width": 960,
+          "height": 600
+        },
+        "thumb.webp": {
+          "sha256": "447515c5571edd3855d4de492da14539087b94884dc4b6a16bdb1c0b9e464f22",
+          "bytes": 22054,
+          "width": 360,
+          "height": 360
+        }
+      }
+    }
+  ]
+}

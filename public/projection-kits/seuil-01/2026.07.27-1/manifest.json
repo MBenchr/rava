@@ -1,0 +1,110 @@
+{
+  "id": "seuil-01",
+  "version": "2026.07.27-1",
+  "status": "approved",
+  "dimensionsMm": {
+    "width": 1020,
+    "height": 1840,
+    "depth": 420
+  },
+  "outerRadiusMm": 52,
+  "wallThicknessMm": 80,
+  "plinth": {
+    "heightMm": 100,
+    "recessMm": 25
+  },
+  "openings": [
+    {
+      "id": "left-1",
+      "kind": "rounded-rect",
+      "x": 80,
+      "y": 80,
+      "width": 230,
+      "height": 355,
+      "radius": 65
+    },
+    {
+      "id": "left-2",
+      "kind": "rounded-rect",
+      "x": 80,
+      "y": 515,
+      "width": 230,
+      "height": 355,
+      "radius": 65
+    },
+    {
+      "id": "left-3",
+      "kind": "rounded-rect",
+      "x": 80,
+      "y": 950,
+      "width": 230,
+      "height": 355,
+      "radius": 65
+    },
+    {
+      "id": "left-4",
+      "kind": "rounded-rect",
+      "x": 80,
+      "y": 1385,
+      "width": 230,
+      "height": 355,
+      "radius": 65
+    },
+    {
+      "id": "arch",
+      "kind": "arch",
+      "x": 390,
+      "y": 80,
+      "width": 550,
+      "height": 540,
+      "radius": 170,
+      "shoulderY": 250
+    },
+    {
+      "id": "right-1",
+      "kind": "rounded-rect",
+      "x": 390,
+      "y": 690,
+      "width": 550,
+      "height": 230,
+      "radius": 65
+    },
+    {
+      "id": "right-2",
+      "kind": "rounded-rect",
+      "x": 390,
+      "y": 990,
+      "width": 550,
+      "height": 230,
+      "radius": 65
+    },
+    {
+      "id": "right-3",
+      "kind": "rounded-rect",
+      "x": 390,
+      "y": 1290,
+      "width": 550,
+      "height": 450,
+      "radius": 70
+    }
+  ],
+  "maskPath": "/isandre/reference/seuil-01-mask.svg",
+  "sourceReference": "/isandre/media/seuil-01/c01/chalk/index.webp",
+  "schemaVersion": 2,
+  "geometryChecksum": "3318d536431af805b6ef013f0e218688015e084c8ee33b739ad25d4ff15325df",
+  "meshBoundsMm": {
+    "width": 1020,
+    "height": 1840,
+    "depth": 420
+  },
+  "generatedAt": "2026-07-28T14:07:33.394Z",
+  "generatedFrom": "lib/isandre/geometry.data.json",
+  "assets": {
+    "frontOrthographic": "front-orthographic.png",
+    "frontRight30": "front-right-30.png",
+    "rearLeft30": "rear-left-30.png",
+    "identityBoard": "identity-board.png",
+    "glb": "product.glb",
+    "usdz": "product.usdz"
+  }
+}

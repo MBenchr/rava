@@ -4,12 +4,27 @@ import { expect, test } from "@playwright/test";
 
 const roomImage = path.join(
   process.cwd(),
-  "public",
-  "viaire",
-  "elan-o1",
-  "scenes",
-  "viaire-seuil-chalk-lifestyle.webp",
+  "media",
+  "a7-sources",
+  "seuil-01",
+  "d01",
+  "chalk.png",
 );
+
+test("root remains English even when the browser prefers French", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "accept-language": "fr-FR,fr;q=0.9,en;q=0.8",
+  });
+  await page.goto("/");
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en-GB");
+  await expect(
+    page.getByRole("heading", { level: 1, name: /The room continues/ }),
+  ).toBeVisible();
+});
 
 test("variant changes keep the current hero visible while the next image decodes", async ({
   page,
@@ -20,7 +35,7 @@ test("variant changes keep the current hero visible while the next image decodes
   });
 
   await page.route(
-    "**/viaire/elan-o1/scenes/viaire-seuil-butter-lifestyle-mobile.webp",
+    "**/isandre/media/seuil-01/d01/butter/*",
     async (route) => {
       await butterImageGate;
       await route.continue();
@@ -29,52 +44,123 @@ test("variant changes keep the current hero visible while the next image decodes
 
   await page.goto("/");
 
-  const heroPicture = page.locator(".campaign-hero__visual picture");
+  const heroPicture = page.locator(".storefront-fold__visual > picture");
   const heroImage = heroPicture.locator("img");
-  await expect(heroPicture).toHaveAttribute("data-image-src", /chalk-lifestyle/);
+  await expect(heroPicture).toHaveAttribute(
+    "data-image-src",
+    /seuil-01\/d01\/chalk\/index\.webp/,
+  );
   await expect
     .poll(() => heroImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
 
   await page.getByRole("button", { name: /Butter/ }).first().click();
 
-  await expect(heroPicture).toHaveAttribute("data-image-src", /chalk-lifestyle/, {
-    timeout: 1_000,
-  });
+  await expect(heroPicture).toHaveAttribute(
+    "data-image-src",
+    /seuil-01\/d01\/chalk\/index\.webp/,
+    { timeout: 1_000 },
+  );
   await expect
     .poll(() => heroImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
   releaseButterImage();
   await expect(heroPicture).toHaveAttribute(
     "data-image-src",
-    /butter-lifestyle/,
+    /seuil-01\/d01\/butter\/index\.webp/,
     { timeout: 10_000 },
   );
 
   await page
-    .getByRole("button", { name: "PORTÉE, Open Low Cabinet", exact: true })
+    .getByRole("button", { name: "PORTÉE 02, Open Low Cabinet", exact: true })
     .click();
-  await expect(page).toHaveURL(/product=portee-o2&finish=butter/);
+  await expect(page).toHaveURL(/product=portee-02&finish=butter/);
   await expect(heroPicture).toHaveAttribute(
     "data-image-src",
-    /viaire-portee-butter-lifestyle/,
+    /portee-02\/d01\/butter\/index\.webp/,
   );
 
   await page
-    .getByRole("button", { name: "VEILLE, Bedside Table", exact: true })
+    .getByRole("button", { name: "VEILLE 03, Bedside Table", exact: true })
     .click();
-  await expect(page).toHaveURL(/product=veille-o4&finish=butter/);
+  await expect(page).toHaveURL(/product=veille-03&finish=butter/);
   await expect(heroPicture).toHaveAttribute(
     "data-image-src",
-    /viaire-veille-butter-lifestyle/,
+    /veille-03\/d01\/butter\/index\.webp/,
   );
 
   await page.getByRole("button", { name: /Sage/ }).first().click();
-  await expect(page).toHaveURL(/product=veille-o4&finish=sage/);
+  await expect(page).toHaveURL(/product=veille-03&finish=sage/);
   await expect(heroPicture).toHaveAttribute(
     "data-image-src",
-    /viaire-veille-sage-lifestyle/,
+    /veille-03\/d01\/sage\/index\.webp/,
   );
+});
+
+test("shared product pages keep commerce, proof and project support aligned", async ({
+  page,
+}) => {
+  await page.goto("/products/seuil-01?finish=chalk");
+
+  await expect(page.locator(".product-commerce")).toHaveCount(1);
+  await expect(page.locator(".product-story")).toHaveCount(1);
+  await expect(page.locator(".product-details")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "SEUIL 01" })).toBeVisible();
+
+  await page.getByRole("button", { name: /Sage/ }).first().click();
+  await expect(page).toHaveURL(/\/products\/seuil-01\?finish=sage/);
+
+  await page.getByRole("button", { name: "Product view" }).click();
+  await expect
+    .poll(() =>
+      page
+        .locator(".product-gallery__stage img")
+        .evaluate((image) => getComputedStyle(image).objectFit),
+    )
+    .toBe("contain");
+
+  const proofImages = page.locator(".product-story__gallery img");
+  await expect(proofImages).toHaveCount(3);
+  for (let index = 0; index < 3; index += 1) {
+    await proofImages.nth(index).scrollIntoViewIfNeeded();
+    await expect
+      .poll(() =>
+        proofImages
+          .nth(index)
+          .evaluate((image: HTMLImageElement) => image.naturalWidth),
+      )
+      .toBeGreaterThan(0);
+  }
+  const productDetails = page.locator(".product-details");
+  const technicalSheetButton = productDetails.getByRole("button", {
+    name: "Technical sheet",
+  });
+  await expect(technicalSheetButton).toBeVisible();
+  await technicalSheetButton.click();
+  await expect(
+    page.getByRole("dialog", { name: "Technical sheet" }),
+  ).toBeVisible();
+  await page
+    .getByRole("dialog", { name: "Technical sheet" })
+    .getByRole("button", { name: "Close" })
+    .click();
+  await expect(
+    productDetails.getByRole("link", { name: "Speak to the studio" }),
+  ).toBeVisible();
+
+  await page.goto("/products/veille-03?finish=butter");
+  await expect(
+    page.locator(".product-story__gallery figure picture").nth(2),
+  ).toHaveAttribute("data-image-src", /veille-03\/p04\/chalk\/index\.webp/);
+  await expect(page.getByText("Final dimensions under validation.", { exact: true })).toBeVisible();
+
+  await page.goto("/fr/produits/portee-02?finish=sage");
+  await expect(page.getByRole("heading", { name: "PORTÉE 02" })).toBeVisible();
+  await expect(
+    page
+      .locator(".product-details")
+      .getByRole("button", { name: "Fiche technique" }),
+  ).toBeVisible();
 });
 
 test("storefront selection, cart and successful projection stay usable", async ({ page }) => {
@@ -92,7 +178,7 @@ test("storefront selection, cart and successful projection stay usable", async (
           status: "queued",
           progress: 2,
           stageLabel: "Queued",
-          productId: "elan-o1",
+          productId: "seuil-01",
           finishId: "butter",
           placementMode: "against-wall",
           transform: {
@@ -117,7 +203,7 @@ test("storefront selection, cart and successful projection stay usable", async (
           status: "completed",
           progress: 100,
           stageLabel: "Projection ready",
-          productId: "elan-o1",
+          productId: "seuil-01",
           finishId: "butter",
           placementMode: "against-wall",
           transform: {
@@ -129,14 +215,14 @@ test("storefront selection, cart and successful projection stay usable", async (
           expiresAt: new Date(Date.now() + 60_000).toISOString(),
           artifact: {
             projectionImage:
-              "/viaire/elan-o1/scenes/viaire-seuil-butter-lifestyle.webp",
+              "/isandre/media/seuil-01/d01/butter/index.webp",
             promptDigest: "e2e-prompt",
             requestId: "e2e-request",
-            productId: "elan-o1",
+            productId: "seuil-01",
             finishId: "butter",
             placementBox,
-            referenceKitVersion: "official-finish-photo-v1",
-            promptVersion: "single-reference-room-edit-v1",
+            referenceKitVersion: "2026.07.27-1",
+            promptVersion: "single-reference-room-edit-v2",
             rendererVersion: "single-reference-openai-v1",
           },
         },
@@ -146,42 +232,42 @@ test("storefront selection, cart and successful projection stay usable", async (
 
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Let life through");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("The room continues");
   await page.getByLabel("Delivery country").selectOption("CH");
-  await expect(page.getByText("CHF 3,000", { exact: true }).first()).toBeVisible();
+  await expect(page.locator(".purchase-panel__price")).toHaveText("CHF 3,000");
   await page.getByLabel("Delivery country").selectOption("US");
-  await expect(page.getByText("$3,300", { exact: true }).first()).toBeVisible();
+  await expect(page.locator(".purchase-panel__price")).toHaveText("$3,300");
 
   await page.getByRole("button", { name: /Butter/ }).first().click();
   await expect(page).toHaveURL(/finish=butter/);
 
   await page.getByRole("button", { name: "Add to bag" }).click();
-  await expect(page.getByRole("dialog", { name: /The bag/ })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: /Your bag/ })).toBeVisible();
   await page.keyboard.press("Escape");
 
-  await page.getByRole("button", { name: /View this finish in your room/ }).click();
+  await page.getByRole("button", { name: "View in your room" }).first().click();
   await page.locator('input[type="file"]').setInputFiles(roomImage);
   const room = page.getByRole("img", { name: "Full photo of your room" });
   await expect(room).toHaveJSProperty("complete", true);
   await room.click();
-  await expect(page.getByRole("button", { name: "Create view" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create the view" })).toBeVisible();
 
   const jobRequest = page.waitForRequest((request) =>
     request.url().endsWith("/api/projection/jobs") && request.method() === "POST",
   );
-  await page.getByRole("button", { name: "Create view" }).click();
+  await page.getByRole("button", { name: "Create the view" }).click();
   await jobRequest;
 
-  await expect(page.getByRole("img", { name: "Projection" })).toBeVisible();
-  await expect(page.getByRole("slider", { name: "Compare before and after" })).toBeVisible();
-  await page.getByRole("slider", { name: "Compare before and after" }).fill("72");
+  await expect(page.getByRole("img", { name: "After" })).toBeVisible();
+  await expect(page.getByRole("slider", { name: "Drag to compare" })).toBeVisible();
+  await page.getByRole("slider", { name: "Drag to compare" }).fill("72");
 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download image" }).click();
-  await expect((await download).suggestedFilename()).toContain("viaire-seuil-butter");
+  await expect((await download).suggestedFilename()).toContain("isandre-seuil-01-butter");
 
-  await page.getByRole("button", { name: "Add to bag" }).click();
-  await expect(page.getByRole("dialog", { name: /The bag/ })).toBeVisible();
+  await page.getByRole("button", { name: "Add this piece to your bag" }).click();
+  await expect(page.getByRole("dialog", { name: /Your bag/ })).toBeVisible();
 });
 
 test("projection billing failure is explicit and leaves the studio usable", async ({ page }) => {
@@ -198,7 +284,7 @@ test("projection billing failure is explicit and leaves the studio usable", asyn
           status: "queued",
           progress: 2,
           stageLabel: "Queued",
-          productId: "elan-o1",
+          productId: "seuil-01",
           finishId: "chalk",
           placementMode: "against-wall",
           transform: {
@@ -222,7 +308,7 @@ test("projection billing failure is explicit and leaves the studio usable", asyn
           status: "failed",
           progress: 100,
           stageLabel: "Projection failed",
-          productId: "elan-o1",
+          productId: "seuil-01",
           finishId: "chalk",
           placementMode: "against-wall",
           transform: {
@@ -243,15 +329,31 @@ test("projection billing failure is explicit and leaves the studio usable", asyn
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: /View this finish in your room/ }).click();
+  await page.getByRole("button", { name: "View in your room" }).first().click();
   await page.locator('input[type="file"]').setInputFiles(roomImage);
   await page.getByRole("img", { name: "Full photo of your room" }).click();
-  await page.getByRole("button", { name: "Create view" }).click();
+  await page.getByRole("button", { name: "Create the view" }).click();
 
   await expect(
     page.getByText("The OpenAI projection credit limit has been reached.", {
       exact: false,
     }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Create view" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Create the view" })).toBeEnabled();
+});
+
+test("legacy routes migrate and unvalidated VEILLE geometry cannot reach generation", async ({
+  page,
+}) => {
+  await page.goto("/products/elan-o1?finish=sage");
+  await expect(page).toHaveURL(/\/products\/seuil-01\?finish=sage/);
+
+  await page.goto("/?product=veille-03&finish=chalk");
+  await page.getByRole("button", { name: "View in your room" }).first().click();
+  await expect(page.getByText("Room projection coming soon.")).toBeVisible();
+  await expect(
+    page.getByText(
+      "This tool will be released after the manufacturing dimensions are approved.",
+    ),
+  ).toBeVisible();
 });

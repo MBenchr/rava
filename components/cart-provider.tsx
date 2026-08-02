@@ -11,12 +11,12 @@ import {
 
 import {
   getFinishPriceCents,
-  isFinishId,
-  isProductId,
   normalizeFinishForProduct,
+  normalizeFinishId,
+  normalizeProductId,
   type FinishId,
   type ProductId,
-} from "@/lib/rava-content";
+} from "@/lib/isandre/catalog";
 
 export type CartLine = {
   productId: ProductId;
@@ -45,7 +45,7 @@ type CartContextValue = {
   setCartOpen: (open: boolean) => void;
 };
 
-const STORAGE_KEY = "traversee-bag-v1";
+const STORAGE_KEY = "isandre-bag-v1";
 
 const CartContext = createContext<CartContextValue | null>(null);
 
@@ -57,15 +57,36 @@ function makeLineKey(productId: ProductId, finishId: FinishId) {
   return `${productId}:${finishId}`;
 }
 
-function sanitizeItems(items: CartLine[]) {
-  return items
-    .filter((item) => isProductId(item.productId) && isFinishId(item.finishId))
-    .map((item) => ({
-      productId: item.productId,
-      finishId: normalizeFinishForProduct(item.productId, item.finishId),
-      quantity: sanitizeQuantity(item.quantity),
-    }))
-    .filter((item) => item.quantity > 0);
+function sanitizeItems(value: unknown): CartLine[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+
+    const candidate = item as {
+      productId?: unknown;
+      finishId?: unknown;
+      quantity?: unknown;
+    };
+    const productId =
+      typeof candidate.productId === "string"
+        ? normalizeProductId(candidate.productId)
+        : null;
+    const finishId =
+      typeof candidate.finishId === "string"
+        ? normalizeFinishId(candidate.finishId)
+        : null;
+
+    if (!productId || !finishId || typeof candidate.quantity !== "number") {
+      return [];
+    }
+
+    return [{
+      productId,
+      finishId: normalizeFinishForProduct(productId, finishId),
+      quantity: sanitizeQuantity(candidate.quantity),
+    }];
+  });
 }
 
 export function CartProvider({ children }: PropsWithChildren) {
@@ -88,10 +109,12 @@ export function CartProvider({ children }: PropsWithChildren) {
           return;
         }
 
-        const parsed = JSON.parse(saved) as CartLine[];
+        const parsed: unknown = JSON.parse(saved);
 
         if (Array.isArray(parsed)) {
-          setItems(sanitizeItems(parsed));
+          const normalized = sanitizeItems(parsed);
+          setItems(normalized);
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
         }
       } catch {
         window.localStorage.removeItem(STORAGE_KEY);

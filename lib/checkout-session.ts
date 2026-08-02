@@ -7,7 +7,8 @@ import {
   getProductById,
   getProductCopy,
   type CheckoutPayload,
-} from "@/lib/rava-content";
+} from "@/lib/isandre/catalog";
+import { assertLiveCheckoutReleased } from "@/lib/isandre/release";
 import {
   formatMarketAmount,
   getMarket,
@@ -18,26 +19,40 @@ import { getServerEnv } from "@/lib/server-env";
 
 type CheckoutUiMode = "hosted" | "elements";
 
-function originFor(request: Request) {
+export function resolveCheckoutOrigin(request: Request) {
   const requestUrl = new URL(request.url);
   const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const forwardedProtocol =
-    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ??
-    requestUrl.protocol.replace(":", "");
   const candidateHost = forwardedHost ?? requestUrl.host;
+  const configuredSiteUrl = getServerEnv("NEXT_PUBLIC_SITE_URL");
+  const configuredHost = configuredSiteUrl
+    ? new URL(configuredSiteUrl).host
+    : undefined;
+  const forwardedProtocol = request.headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim()
+    .toLowerCase();
   const isAllowedHost =
-    candidateHost === "rava.mohyi.com" ||
-    candidateHost === "rava-qt9q.onrender.com" ||
+    candidateHost === "isandre.com" ||
+    candidateHost === "www.isandre.com" ||
+    candidateHost === configuredHost ||
     candidateHost === "localhost" ||
     candidateHost.startsWith("localhost:") ||
     candidateHost === "127.0.0.1" ||
     candidateHost.startsWith("127.0.0.1:");
 
   if (isAllowedHost) {
-    return `${forwardedProtocol}://${candidateHost}`;
+    const isLocal =
+      candidateHost === "localhost" ||
+      candidateHost.startsWith("localhost:") ||
+      candidateHost === "127.0.0.1" ||
+      candidateHost.startsWith("127.0.0.1:");
+    const protocol = isLocal && forwardedProtocol !== "https" ? "http" : "https";
+
+    return `${protocol}://${candidateHost}`;
   }
 
-  return (getServerEnv("NEXT_PUBLIC_SITE_URL") ?? requestUrl.origin).replace(/\/$/, "");
+  return (configuredSiteUrl ?? requestUrl.origin).replace(/\/$/, "");
 }
 
 function deliveryEstimate(marketCode: CheckoutPayload["marketCode"]) {
@@ -55,8 +70,9 @@ export function buildCheckoutSessionParams(
   payload: CheckoutPayload,
   uiMode: CheckoutUiMode,
 ): Stripe.Checkout.SessionCreateParams {
+  assertLiveCheckoutReleased(payload.items.map((item) => item.productId));
   const market = getMarket(payload.marketCode);
-  const origin = originFor(request);
+  const origin = resolveCheckoutOrigin(request);
   const paymentMethodConfiguration = getServerEnv("STRIPE_PAYMENT_METHOD_CONFIGURATION_ID");
   const shippingAmount = getMarketShippingCents(payload.marketCode);
   const delivery = deliveryEstimate(payload.marketCode);
@@ -139,12 +155,12 @@ export function buildCheckoutSessionParams(
       invoice_data: {
         description:
           payload.locale === "fr"
-            ? "Pièce VIAIRE fabriquée sur commande."
-            : "VIAIRE piece made to order.",
+            ? "Pièce ISANDRE fabriquée sur commande."
+            : "ISANDRE piece made to order.",
         footer:
           payload.locale === "fr"
-            ? "Merci d’avoir choisi VIAIRE."
-            : "Thank you for choosing VIAIRE.",
+            ? "Merci d’avoir choisi ISANDRE."
+            : "Thank you for choosing ISANDRE.",
         metadata: {
           brand: brandIdentity.name,
           marketCode: payload.marketCode,
@@ -158,7 +174,7 @@ export function buildCheckoutSessionParams(
       orderKind: "catalog",
       locale: payload.locale,
       marketCode: payload.marketCode,
-      catalogVersion: "viaire-international-v3",
+      catalogVersion: "isandre-taqa-v1",
       catalogPricingPolicy: "fixed-market-anchor-v1",
       taxEngine: "stripe-tax",
     },

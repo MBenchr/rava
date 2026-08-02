@@ -1,0 +1,9 @@
+asset_id,asset_status,media_origin,creator,rights_owner,people_release,property_release,third_party_objects,music_license,territories,channels,expires_on,credit,source_path,approval_owner,notes
+seuil-01-d01-chalk,digital-approved,ai-assisted,,,,not-applicable,review-required,not-applicable,pending,pending,,pending,media/a7-sources/seuil-01/d01/chalk.png,,Campaign image only; retain AI metadata
+seuil-01-c01-chalk,digital-approved,ai-assisted,,,,not-applicable,not-applicable,not-applicable,pending,pending,,pending,media/a7-sources/seuil-01/c01/chalk.png,,Canonical digital packshot; not physical colour proof
+portee-02-d01-sage,digital-approved,ai-assisted,,,,not-applicable,review-required,not-applicable,pending,pending,,pending,media/a7-sources/portee-02/d01/sage.png,,Campaign image only; retain AI metadata
+portee-02-c01-chalk,digital-approved,ai-assisted,,,,not-applicable,not-applicable,not-applicable,pending,pending,,pending,media/a7-sources/portee-02/c01/chalk.png,,Canonical digital packshot; not physical colour proof
+veille-03-d01-rose-clay,concept-blocked,ai-assisted,,,,not-applicable,review-required,not-applicable,none,none,,not-released,media/a7-sources/veille-03/d01/rose-clay.png,,Do not distribute before dimensional approval
+physical-workshop-001,required,documentary,,,,required,required,review-required,required,pending,pending,,pending,,,Must depict the actual manufacturing chain
+physical-home-001,required,documentary,,,,required,required,review-required,not-applicable,pending,pending,,pending,,,Real installation and 30-day return visit
+

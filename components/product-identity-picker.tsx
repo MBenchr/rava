@@ -11,7 +11,7 @@ import {
   type FinishId,
   type Locale,
   type ProductId,
-} from "@/lib/rava-content";
+} from "@/lib/isandre/catalog";
 
 type ProductIdentityPickerProps = {
   finishId: FinishId;
@@ -56,7 +56,7 @@ export default function ProductIdentityPicker({
                 fill
                 sizes={compact ? "72px" : "120px"}
                 unoptimized
-                className="object-cover"
+                className="pointer-events-none object-cover"
               />
             </span>
             <span className="product-identity-picker__copy">

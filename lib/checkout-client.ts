@@ -1,10 +1,11 @@
-import type { CheckoutPayload } from "@/lib/rava-content";
+import type { CheckoutPayload } from "@/lib/isandre/catalog";
 
 export async function openStripeCheckout(payload: CheckoutPayload) {
+  const checkoutAttemptId = crypto.randomUUID();
   const response = await fetch("/api/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, checkoutAttemptId }),
   });
   const data = (await response.json()) as { url?: string; error?: string };
 

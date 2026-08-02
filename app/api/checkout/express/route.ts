@@ -1,31 +1,16 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
+import {
+  checkoutIdempotencyKey,
+  parseCheckoutPayload,
+} from "@/lib/checkout-contract";
 import { buildCheckoutSessionParams } from "@/lib/checkout-session";
-import { marketCodes } from "@/lib/markets";
-import { finishIds, productIds } from "@/lib/rava-content";
 import { getServerEnv } from "@/lib/server-env";
 import { getStripeClient } from "@/lib/stripe";
 
-const schema = z.object({
-  items: z
-    .array(
-      z.object({
-        productId: z.enum(productIds),
-        finishId: z.enum(finishIds),
-        quantity: z.number().int().min(1).max(12),
-      }),
-    )
-    .min(1)
-    .max(12),
-  locale: z.enum(["en", "fr"]).default("en"),
-  marketCode: z.enum(marketCodes),
-  email: z.string().email().optional(),
-});
-
 export async function POST(request: Request) {
   try {
-    const payload = schema.parse(await request.json());
+    const payload = parseCheckoutPayload(await request.json());
     const publishableKey = getServerEnv("STRIPE_PUBLISHABLE_KEY");
 
     if (!publishableKey) {
@@ -37,6 +22,9 @@ export async function POST(request: Request) {
 
     const session = await getStripeClient().checkout.sessions.create(
       buildCheckoutSessionParams(request, payload, "elements"),
+      {
+        idempotencyKey: checkoutIdempotencyKey(payload, "express"),
+      },
     );
 
     if (!session.client_secret) {
